@@ -1,0 +1,47 @@
+.App {
+  text-align: center;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #282c34;
+  overflow: hidden;
+}
+
+#game-container {
+  width: 800px;
+  height: 600px;
+  margin: 0 auto;
+  background-color: #000;
+  position: relative;
+  border: 2px solid #4CAF50;
+  box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+}
+
+.start-screen {
+  color: white;
+  text-align: center;
+}
+
+.start-screen h1 {
+  font-size: 2.5em;
+  margin-bottom: 1em;
+  color: #ffd700;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.start-screen button {
+  padding: 1em 2em;
+  font-size: 1.2em;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.start-screen button:hover {
+  background-color: #45a049;
+} 
