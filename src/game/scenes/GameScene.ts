@@ -18,6 +18,9 @@ interface NPC {
   sprite: GameObjects.Sprite;
   dialog: string[];
   currentDialogIndex: number;
+  patrolPoints?: {x: number, y: number}[];
+  currentPatrolIndex?: number;
+  isMoving?: boolean;
   dialogBox?: {
     background: GameObjects.Rectangle;
     text: GameObjects.Text;
@@ -73,6 +76,29 @@ export default class GameScene extends Scene {
     this.securityLevel = this.office.META_DATA.securityLevel;
     this.npcs = new Map();
     this.mapLayers = null;
+
+    // Gerenciar eventos de visibilidade da janela
+    window.addEventListener('blur', () => this.handleGamePause());
+    window.addEventListener('focus', () => this.handleGameResume());
+  }
+
+  private handleGamePause(): void {
+    // Pausar todas as tweens ativas
+    this.tweens.pauseAll();
+    // Zerar velocidades
+    if (this.player?.sprite) {
+      this.player.sprite.setVelocity(0, 0);
+    }
+    this.npcs.forEach(npc => {
+      if (npc.sprite) {
+        npc.isMoving = false;
+      }
+    });
+  }
+
+  private handleGameResume(): void {
+    // Retomar tweens
+    this.tweens.resumeAll();
   }
 
   preload(): void {
@@ -164,19 +190,24 @@ export default class GameScene extends Scene {
     const speed = 160;
     const player = this.player;
 
+    // Priorizar movimento horizontal
     if (this.cursors.left?.isDown) {
       player.sprite.setVelocityX(-speed);
+      player.sprite.setVelocityY(0);
     } else if (this.cursors.right?.isDown) {
       player.sprite.setVelocityX(speed);
-    } else {
-      player.sprite.setVelocityX(0);
+      player.sprite.setVelocityY(0);
     }
-
-    if (this.cursors.up?.isDown) {
+    // Se não houver movimento horizontal, permitir movimento vertical
+    else if (this.cursors.up?.isDown) {
+      player.sprite.setVelocityX(0);
       player.sprite.setVelocityY(-speed);
     } else if (this.cursors.down?.isDown) {
+      player.sprite.setVelocityX(0);
       player.sprite.setVelocityY(speed);
     } else {
+      // Nenhuma tecla pressionada
+      player.sprite.setVelocityX(0);
       player.sprite.setVelocityY(0);
     }
     
@@ -218,8 +249,8 @@ export default class GameScene extends Scene {
       const tileSize = 16;
       const map = this.office.OFFICE_LAYOUT;
 
-      // Criar um grupo de física para as paredes
-      const wallGroup = this.physics.add.staticGroup();
+      // Criar um grupo de física para as paredes e objetos
+      const collisionGroup = this.physics.add.staticGroup();
 
       for (let y = 0; y < map.length; y++) {
         for (let x = 0; x < map[y].length; x++) {
@@ -231,49 +262,78 @@ export default class GameScene extends Scene {
             case 'W':
               // Criar retângulo físico para a parede
               const wall = this.add.rectangle(tileX + tileSize/2, tileY + tileSize/2, tileSize, tileSize, 0x000000);
+              this.physics.add.existing(wall, true); // true = static body
+              collisionGroup.add(wall);
               wallsLayer.add(wall);
-              // Adicionar o retângulo ao grupo de física
-              wallGroup.add(wall);
               break;
             case 'F':
               floorLayer.add(this.add.image(tileX + tileSize/2, tileY + tileSize/2, 'floor'));
               break;
             case 'D':
               floorLayer.add(this.add.image(tileX + tileSize/2, tileY + tileSize/2, 'floor'));
-              objectsLayer.add(this.add.image(tileX + tileSize/2, tileY + tileSize/2, 'desk'));
+              const desk = this.add.image(tileX + tileSize/2, tileY + tileSize/2, 'desk');
+              this.physics.add.existing(desk, true);
+              collisionGroup.add(desk);
+              objectsLayer.add(desk);
               break;
             case 'C':
               floorLayer.add(this.add.image(tileX + tileSize/2, tileY + tileSize/2, 'floor'));
-              objectsLayer.add(this.add.image(tileX + tileSize/2, tileY + tileSize/2, 'chair'));
+              const chair = this.add.image(tileX + tileSize/2, tileY + tileSize/2, 'chair');
+              this.physics.add.existing(chair, true);
+              collisionGroup.add(chair);
+              objectsLayer.add(chair);
               break;
             case 'T':
               floorLayer.add(this.add.image(tileX + tileSize/2, tileY + tileSize/2, 'floor'));
-              objectsLayer.add(this.add.image(tileX + tileSize/2, tileY + tileSize/2, 'terminal'));
+              const terminal = this.add.image(tileX + tileSize/2, tileY + tileSize/2, 'terminal');
+              this.physics.add.existing(terminal, true);
+              collisionGroup.add(terminal);
+              objectsLayer.add(terminal);
               break;
             case 'E':
               floorLayer.add(this.add.image(tileX + tileSize/2, tileY + tileSize/2, 'floor'));
-              objectsLayer.add(this.add.image(tileX + tileSize/2, tileY + tileSize/2, 'elevator'));
+              const elevator = this.add.image(tileX + tileSize/2, tileY + tileSize/2, 'elevator');
+              this.physics.add.existing(elevator, true);
+              collisionGroup.add(elevator);
+              objectsLayer.add(elevator);
               break;
           }
         }
       }
 
-      // Adicionar colisão entre o player e as paredes
+      // Adicionar colisão entre o player e todos os objetos
       if (this.player) {
-        this.physics.add.collider(this.player.sprite, wallGroup);
+        this.physics.add.collider(this.player.sprite, collisionGroup);
       }
-
-      // Adicionar colisão entre NPCs e paredes
-      this.npcs.forEach(npc => {
-        if (npc.sprite.body) {
-          this.physics.add.collider(npc.sprite, wallGroup);
-        }
-      });
 
       return { wallsLayer, floorLayer, objectsLayer };
     } catch (error) {
       console.error('Error creating office map:', error);
-      return null;
+      // Em vez de retornar null, vamos criar um mapa básico com paredes
+      const floorLayer = this.add.container();
+      const wallsLayer = this.add.container();
+      const objectsLayer = this.add.container();
+      const collisionGroup = this.physics.add.staticGroup();
+
+      // Criar paredes básicas
+      for (let x = 0; x < 20; x++) {
+        for (let y = 0; y < 20; y++) {
+          if (x === 0 || x === 19 || y === 0 || y === 19) {
+            const wall = this.add.rectangle(x * 16 + 8, y * 16 + 8, 16, 16, 0x000000);
+            this.physics.add.existing(wall, true);
+            collisionGroup.add(wall);
+            wallsLayer.add(wall);
+          } else {
+            floorLayer.add(this.add.image(x * 16 + 8, y * 16 + 8, 'floor'));
+          }
+        }
+      }
+
+      if (this.player) {
+        this.physics.add.collider(this.player.sprite, collisionGroup);
+      }
+
+      return { wallsLayer, floorLayer, objectsLayer };
     }
   }
 
@@ -334,12 +394,84 @@ export default class GameScene extends Scene {
   }
 
   private updateNPCs(): void {
-    // Implementar comportamento dos NPCs
     this.npcs.forEach(npc => {
-      // Lógica de movimento e comportamento dos NPCs
+      if (!npc.patrolPoints) {
+        // Definir pontos de patrulha para o NPC
+        const tileSize = 16;
+        npc.patrolPoints = [
+          {x: 4 * tileSize, y: 5 * tileSize}, // Posição inicial
+          {x: 8 * tileSize, y: 5 * tileSize}, // Ponto de patrulha 1
+          {x: 8 * tileSize, y: 3 * tileSize}, // Ponto de patrulha 2
+          {x: 4 * tileSize, y: 3 * tileSize}  // Ponto de patrulha 3
+        ];
+        npc.currentPatrolIndex = 0;
+        npc.isMoving = false;
+      }
+
+      if (!npc.isMoving) {
+        // Avançar para o próximo ponto de patrulha
+        npc.currentPatrolIndex = (npc.currentPatrolIndex! + 1) % npc.patrolPoints.length;
+        const target = npc.patrolPoints[npc.currentPatrolIndex!];
+
+        // Primeiro move horizontalmente, depois verticalmente
+        const moveHorizontally = () => {
+          if (target.x !== npc.sprite.x) {
+            try {
+              this.tweens.add({
+                targets: npc.sprite,
+                x: target.x,
+                duration: 1000,
+                ease: 'Linear',
+                onStart: () => {
+                  npc.isMoving = true;
+                  // Virar o sprite na direção do movimento
+                  npc.sprite.setFlipX(target.x < npc.sprite.x);
+                },
+                onComplete: () => {
+                  if (this.scene.isActive()) {
+                    moveVertically();
+                  }
+                }
+              });
+            } catch (error) {
+              console.warn('Erro ao criar tween horizontal:', error);
+              npc.isMoving = false;
+            }
+          } else {
+            moveVertically();
+          }
+        };
+
+        const moveVertically = () => {
+          if (target.y !== npc.sprite.y) {
+            try {
+              this.tweens.add({
+                targets: npc.sprite,
+                y: target.y,
+                duration: 1000,
+                ease: 'Linear',
+                onComplete: () => {
+                  if (this.scene.isActive()) {
+                    npc.isMoving = false;
+                  }
+                }
+              });
+            } catch (error) {
+              console.warn('Erro ao criar tween vertical:', error);
+              npc.isMoving = false;
+            }
+          } else {
+            npc.isMoving = false;
+          }
+        };
+
+        if (this.scene.isActive()) {
+          moveHorizontally();
+        }
+      }
     });
   }
-
+  
   private showDialog(npc: NPC): void {
     if (this.dialogActive) return;
 
@@ -350,34 +482,39 @@ export default class GameScene extends Scene {
     const screenWidth = Number(this.game.config.width);
     const screenHeight = Number(this.game.config.height);
     
-    const dialogWidth = screenWidth * 0.98;
-    const dialogHeight = screenHeight * 0.3;
-    const padding = 12;
+    const dialogWidth = screenWidth * 1;
+    const dialogHeight = screenHeight * 0.35;
+    const padding = 11;
 
     const x = screenWidth / 2;
     const y = screenHeight - (dialogHeight / 2) - padding;
 
+    // Criar a imagem do rosto por trás
+    const faceImage = this.add.image(x - dialogWidth/99 + padding * 3, y - dialogHeight/1.1, 'lion2');
+    faceImage.setScale(0.12);
+    faceImage.setDepth(0);
+
     // Criar borda externa (branca)
     const outerBorder = this.add.rectangle(x, y, dialogWidth, dialogHeight, 0xFFFFFF);
+    outerBorder.setDepth(1);
     
     // Criar borda interna (preta)
     const innerBorder = this.add.rectangle(x, y, dialogWidth - 4, dialogHeight - 4, 0x000000);
+    innerBorder.setDepth(1);
     
     // Criar fundo branco para o texto
-    const background = this.add.rectangle(x, y, dialogWidth - 8, dialogHeight - 8, 0xFFFFFF);
+    const background = this.add.rectangle(x, y, dialogWidth - 8, dialogHeight - 8, 0xe43675);
+    background.setDepth(1);
 
-    // Criar a imagem do rosto no canto direito
-    const faceImage = this.add.image(x - dialogWidth/99 + padding * 3, y - dialogHeight/1.1, 'lion2');
-    faceImage.setScale(0.1);
-    
-    // Adicionar o nome do NPC abaixo da imagem
-    const nameText = this.add.text(x - dialogWidth/2 + padding * 2, y - dialogHeight/2.3 + padding * 4, 'Dr. Lion', {
-            fontFamily: 'monospace',
-            fontSize: '8px',
+    // Adicionar o nome do NPC acima da imagem
+    const nameText = this.add.text(x - dialogWidth/99 + padding * 3, y - dialogHeight/1.05 - 42 , 'Dr. Lion', {
+      fontFamily: 'monospace',
+      fontSize: '8px',
       color: '#000000',
       align: 'center'
     });
-    nameText.setOrigin(0.5, 0); // Centralizar o texto abaixo da imagem
+    nameText.setOrigin(0.5, 0);
+    nameText.setDepth(2); // Centralizar o texto abaixo da imagem
     
     // Criar o texto do diálogo
     const text = this.add.text(x - dialogWidth/1.8 + padding * 2, y - dialogHeight/3, dialogText, {
@@ -385,13 +522,12 @@ export default class GameScene extends Scene {
       fontSize: '8px',
       color: '#000000',
       align: 'left',
-      lineSpacing: 4,
-      fixedWidth: dialogWidth - (padding * 1),
-      wordWrap: { width: dialogWidth - (padding * 1), useAdvancedWrap: true }
+      wordWrap: { width: dialogWidth - (padding * 4) }
     });
+    text.setDepth(2);
 
     // Armazenar referências para poder fechar o diálogo depois
-          npc.dialogBox = {
+    npc.dialogBox = {
       background, 
       text, 
       border: outerBorder,

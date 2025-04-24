@@ -50,37 +50,43 @@ export const SANTOSPUNK_CORPORATE_OFFICE: CorporateOffice = {
     "W": "wall",
     "F": "floor",
     "D": "desk",
-    "C": "chair",
+    "C": "camera",
     "T": "terminal",
     "E": "elevator",
-    "P": "plant"
+    "P": "plant",
+    "V": "varanda"
   },
   
   OFFICE_LAYOUT: [
-    ["W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W"],
-    ["W", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "P", "W"],
-    ["W", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "W"],
-    ["W", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "W"],
-    ["W", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F"],
-    ["W", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F"],
-    ["W", "F", "D", "D", "D", "D", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F"],
-    ["W", "F", "D", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "W"],
-    ["W", "F", "D", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "P", "W"],
-    ["W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W"]
+    ["W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W"],
+    ["W", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "C", "W", "V", "V", "V", "V", "V", "V", "V", "V", "V", "V"],
+    ["W", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "W", "V", "V", "V", "P", "V", "V", "V", "V", "V", "V"],
+    ["W", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "W", "V", "V", "V", "V", "V", "V", "V", "V", "V", "V"],
+    ["W", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "V", "V", "V", "V", "V", "V", "V", "V", "V", "V"],
+    ["W", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "V", "V", "V", "V", "V", "V", "V", "V", "V", "V"],
+    ["W", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "V", "V", "V", "V", "V", "V", "V", "V", "V", "V"],
+    ["W", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "V", "V", "V", "V", "V", "V", "V", "V", "V", "V"],
+    ["W", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "V", "V", "V", "V", "V", "V", "V", "V", "V", "V"],
+    ["W", "F", "F", "F", "D", "D", "D", "D", "D", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "V", "V", "V", "V", "V", "V", "V", "V", "V", "V"],
+    ["W", "F", "F", "F", "D", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "V", "V", "V", "V", "V", "V", "V", "V", "V", "V"],
+    ["W", "F", "F", "F", "D", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "W", "V", "V", "V", "V", "V", "V", "V", "V", "V", "V"],
+    ["W", "F", "F", "F", "D", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "W", "V", "V", "V", "V", "V", "V", "V", "V", "V", "V"],
+    ["W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W", "W"]
   ],
   
   OFFICE_NPCS: [
     {
       id: 'exec_1',
       name: 'Dr. Lion',
-      position: {x: 4, y: 6},
+      position: {x: 4, y: 5},
       implants: ['Neural Link', 'Enhanced Vision'],
       clearance: 'Preto',
       dialog: [
-        'O departamento 87 da LoftJur Corporation está sob vigilância constante.',
-        'Você sentiu o calor hoje? Não é normal... o sistema de Geoengenharia atomico não dá mais conta.',
+
+        'Fique esperto... Loftjur Corporation está sob vigilância constante.',
+        'Você sentiu o calor hoje? Não é normal... Nosso sistema de Geoengenharia de resfriamento não dá mais conta.',
         'Dizem que o prefeito Bruno instalou cameras e sensores até nos vasos de planta. Ninguém respira sem ser monitorado.',
-        'Se o nível do mar continuar subindo, talvez esse nosso andar 87 vire o térreo...',
+        'Se o nível do mar continuar subindo, talvez o jnosso andar 87 vire o térreo...',
         'Cuidado com o que fala. As paredes têm ouvidos — e olhos também.'
       ]
     }
