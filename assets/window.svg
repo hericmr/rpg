@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Moldura da janela -->
+  <rect x="2" y="2" width="28" height="28" fill="#aaddff" fill-opacity="0.2" stroke="#88bbdd" stroke-width="1"/>
+  <!-- Divisões da janela -->
+  <line x1="2" y1="16" x2="30" y2="16" stroke="#88bbdd" stroke-width="1"/>
+  <line x1="16" y1="2" x2="16" y2="30" stroke="#88bbdd" stroke-width="1"/>
+  <!-- Display integrado -->
+  <rect x="4" y="4" width="24" height="24" fill="#4488aa" fill-opacity="0.3" stroke="#336699" stroke-width="0.5"/>
+  <!-- Informações no display -->
+  <text x="8" y="12" font-family="monospace" font-size="4" fill="#88bbdd">TEMP: 22°C</text>
+  <text x="8" y="18" font-family="monospace" font-size="4" fill="#88bbdd">HUM: 45%</text>
+  <text x="8" y="24" font-family="monospace" font-size="4" fill="#88bbdd">UV: BAIXO</text>
+  <!-- Reflexo de luz -->
+  <rect x="4" y="4" width="8" height="8" fill="#ffffff" fill-opacity="0.2"/>
+</svg> 
