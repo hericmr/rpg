@@ -118,17 +118,17 @@ export default class GameScene extends Scene {
     
   private loadGameAssets(): void {
     // Carregar sprites do jogador e NPCs
-    this.load.spritesheet('player', '/assets/heric2.png', {
+    this.load.spritesheet('player', 'https://github.com/hericmr/rpg/blob/main/public/assets/heric2.png?raw=true', {
       frameWidth: 16,
       frameHeight: 16
     });
     
-    this.load.spritesheet('lion', '/assets/lion.png', {
+    this.load.spritesheet('lion', 'https://github.com/hericmr/rpg/blob/main/public/assets/lion.png?raw=true', {
       frameWidth: 16,
       frameHeight: 16
     });
     
-    this.load.image('lion2', '/assets/lion2.png');
+    this.load.image('lion2', 'https://github.com/hericmr/rpg/blob/main/public/assets/lion2.png?raw=true');
     
     // Carregar assets do mapa
     this.load.image('wall', '/assets/wall.svg');
