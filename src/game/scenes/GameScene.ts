@@ -366,8 +366,8 @@ export default class GameScene extends Scene {
     // Criar fundo branco para o texto
     const background = this.add.rectangle(x, y, dialogWidth - 8, dialogHeight - 8, 0xFFFFFF);
 
-    // Criar a imagem do rosto no canto esquerdo
-    const faceImage = this.add.image(x - dialogWidth/2 + padding * 2, y - dialogHeight/4, 'lion2');
+    // Criar a imagem do rosto no canto direito
+    const faceImage = this.add.image(x - dialogWidth/99 + padding * 3, y - dialogHeight/1.1, 'lion2');
     faceImage.setScale(0.1);
     
     // Adicionar o nome do NPC abaixo da imagem
@@ -380,7 +380,7 @@ export default class GameScene extends Scene {
     nameText.setOrigin(0.5, 0); // Centralizar o texto abaixo da imagem
     
     // Criar o texto do diálogo
-    const text = this.add.text(x - dialogWidth/2 + padding * 4, y - dialogHeight/4, dialogText, {
+    const text = this.add.text(x - dialogWidth/1.8 + padding * 2, y - dialogHeight/3, dialogText, {
       fontFamily: 'monospace',
       fontSize: '8px',
       color: '#000000',
