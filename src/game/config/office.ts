@@ -78,19 +78,25 @@ export const SANTOSPUNK_CORPORATE_OFFICE: CorporateOffice = {
     {
       id: 'exec_1',
       name: 'Dr. Lion',
-      position: {x: 4, y: 5},
+      position: {x: 20, y: 8},
       implants: ['Neural Link', 'Enhanced Vision'],
       clearance: 'Preto',
       dialog: [
-
-        'Fique esperto... Loftjur Corporation está sob vigilância constante.',
-        'Você sentiu o calor hoje? Não é normal... Nosso sistema de Geoengenharia de resfriamento não dá mais conta.',
-        'Dizem que o prefeito Bruno instalou cameras e sensores até nos vasos de planta. Ninguém respira sem ser monitorado.',
-        'Se o nível do mar continuar subindo, talvez o jnosso andar 87 vire o térreo...',
-        'Cuidado com o que fala. As paredes têm ouvidos — e olhos também.'
+        'Zzz... Zzz... Zzz... *ronco profundo* Zzz...',
+        'zzzZZ... zzzZZ... zzzZZ...*parece ate o Snorlax',
+        'Zzz... Zzz... Zzz... *ronco profundo* Zzz...',
+        'Zzzz dorme *como uma pedra...',
       ]
     }
   ],
+
+  /*
+  'Fique esperto... Loftjur Corporation está sob vigilância constante.',
+  'Você sentiu o calor hoje? Não é normal... Nosso sistema de Geoengenharia de resfriamento não dá mais conta.',
+  'Dizem que o prefeito Bruno instalou cameras e sensores até nos vasos de planta. Ninguém respira sem ser monitorado.',
+  'Se o nível do mar continuar subindo, talvez o jnosso andar 87 vire o térreo...',
+  'Cuidado com o que fala. As paredes têm ouvidos — e olhos também.'
+  */
 
   OFFICE_TECH: [
     {

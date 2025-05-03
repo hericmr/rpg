@@ -48,9 +48,11 @@ export class GBEffect {
         this.renderTexture.draw(scene.children.list);
         // Apply shader effect through the pipeline instead
         const renderer = this.scene.renderer as Phaser.Renderer.WebGL.WebGLRenderer;
-        const pipeline = renderer.pipelines.get('GBEffect');
-        if (pipeline) {
-            this.renderTexture.setPipeline('GBEffect');
+        if (renderer && renderer.pipelines) {
+            const pipeline = renderer.pipelines.get('GBEffect');
+            if (pipeline) {
+                this.renderTexture.setPipeline('GBEffect');
+            }
         }
     }
 

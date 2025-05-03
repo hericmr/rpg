@@ -9,14 +9,28 @@
   overflow: hidden;
 }
 
-#game-container {
-  width: 800px;
-  height: 600px;
-  margin: 0 auto;
-  background-color: #000;
+.gameboy-frame {
   position: relative;
-  border: 2px solid #4CAF50;
-  box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+  width: 1600px;
+  height: 1200px;
+  /* O background será definido inline via React usando PUBLIC_URL */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-left: 0px;
+}
+
+#game-container {
+  position: absolute;
+  left: 48%;
+  top: 50%;
+  width: 690px;
+  height: 460px;
+  transform: translate(-50%, -50%);
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  z-index: 1;
 }
 
 .start-screen {

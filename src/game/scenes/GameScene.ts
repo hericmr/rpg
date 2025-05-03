@@ -67,9 +67,10 @@ export default class GameScene extends Scene {
   private gbEffect!: GBEffect;
   private currentTimeOfDay: string;
   private securityLevel: string;
+  private interactionPoints?: { x: number; y: number; dialog: string }[];
 
   constructor() {
-    super({ key: 'GameScene', active: true });
+    super({ key: 'GameScene', active: false });
     this.office = renderOfficeState(SANTOSPUNK_CORPORATE_OFFICE, "manhã");
     this.dialogActive = false;
     this.currentTimeOfDay = "manhã";
@@ -86,7 +87,7 @@ export default class GameScene extends Scene {
     // Pausar todas as tweens ativas
     this.tweens.pauseAll();
     // Zerar velocidades
-    if (this.player?.sprite) {
+    if (this.player?.sprite && this.player.sprite.body) {
       this.player.sprite.setVelocity(0, 0);
     }
     this.npcs.forEach(npc => {
@@ -102,8 +103,20 @@ export default class GameScene extends Scene {
   }
 
   preload(): void {
+    const publicUrl = process.env.PUBLIC_URL || '';
     this.setupAssetLoading();
-    this.loadGameAssets();
+    this.load.tilemapTiledJSON('mapa', `${publicUrl}/assets/mapa.tmx`);
+    this.load.image('Room_Builder_free_16x16', `${publicUrl}/assets/Room_Builder_free_16x16.png`);
+    this.load.image('Interiors_free_16x16', `${publicUrl}/assets/tileset.png`);
+    this.load.spritesheet('player', `${publicUrl}/assets/heric2.png`, { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('lion', `${publicUrl}/assets/lion.png`, { frameWidth: 16, frameHeight: 16 });
+    this.load.image('lionface', `${publicUrl}/assets/lion_2.png`);
+    this.load.image('wall', `${publicUrl}/assets/wall.svg`);
+    this.load.image('floor', `${publicUrl}/assets/floor.svg`);
+    this.load.image('desk', `${publicUrl}/assets/desk.svg`);
+    this.load.image('chair', `${publicUrl}/assets/chair.svg`);
+    this.load.image('terminal', `${publicUrl}/assets/terminal.svg`);
+    this.load.image('elevator', `${publicUrl}/assets/elevator.svg`);
   }
 
   private setupAssetLoading(): void {
@@ -118,42 +131,167 @@ export default class GameScene extends Scene {
     
   private loadGameAssets(): void {
     // Carregar sprites do jogador e NPCs
-    this.load.spritesheet('player', 'https://github.com/hericmr/rpg/blob/main/public/assets/heric2.png?raw=true', {
+    const publicUrl = process.env.PUBLIC_URL || '';
+    this.load.spritesheet('player', `${publicUrl}/assets/heric2.png`, {
       frameWidth: 16,
       frameHeight: 16
     });
     
-    this.load.spritesheet('lion', 'https://github.com/hericmr/rpg/blob/main/public/assets/lion.png?raw=true', {
+    this.load.spritesheet('lion', `${publicUrl}/assets/lion.png`, {
       frameWidth: 16,
       frameHeight: 16
     });
     
-    this.load.image('lion2', 'https://github.com/hericmr/rpg/blob/main/public/assets/lion2.png?raw=true');
-    
-    // Carregar assets do mapa
-    this.load.image('wall', '/assets/wall.svg');
-    this.load.image('floor', '/assets/floor.svg');
-    this.load.image('desk', '/assets/desk.svg');
-    this.load.image('chair', '/assets/chair.svg');
-    this.load.image('terminal', '/assets/terminal.svg');
-    this.load.image('elevator', '/assets/elevator.svg');
+    this.load.image('lionface', `${publicUrl}/assets/lion_2.png`);
+    this.load.image('wall', `${publicUrl}/assets/wall.svg`);
+    this.load.image('floor', `${publicUrl}/assets/floor.svg`);
+    this.load.image('desk', `${publicUrl}/assets/desk.svg`);
+    this.load.image('chair', `${publicUrl}/assets/chair.svg`);
+    this.load.image('terminal', `${publicUrl}/assets/terminal.svg`);
+    this.load.image('elevator', `${publicUrl}/assets/elevator.svg`);
   }
 
   create(): void {
+    // Configurar renderização pixel perfect
+    this.textures.get('player').setFilter(Phaser.Textures.FilterMode.NEAREST);
+    this.textures.get('lion').setFilter(Phaser.Textures.FilterMode.NEAREST);
+    this.textures.get('lionface').setFilter(Phaser.Textures.FilterMode.NEAREST);
+    this.textures.get('wall').setFilter(Phaser.Textures.FilterMode.NEAREST);
+    this.textures.get('floor').setFilter(Phaser.Textures.FilterMode.NEAREST);
+    this.textures.get('desk').setFilter(Phaser.Textures.FilterMode.NEAREST);
+    this.textures.get('chair').setFilter(Phaser.Textures.FilterMode.NEAREST);
+    this.textures.get('terminal').setFilter(Phaser.Textures.FilterMode.NEAREST);
+    this.textures.get('elevator').setFilter(Phaser.Textures.FilterMode.NEAREST);
+    
     this.initializeGameSystems();
-    this.setupGameWorld();
-    this.setupPlayer();
+    
+    const map = this.make.tilemap({ key: 'mapa' });
+    
+    // Adicionar os tilesets
+    const tileset1 = map.addTilesetImage('Room_Builder_free_16x16', 'Room_Builder_free_16x16');
+    const tileset2 = map.addTilesetImage('Interiors_free_16x16', 'Interiors_free_16x16');
+    
+    if (!tileset1 || !tileset2) {
+      throw new Error('Tilesets não encontrados!');
+    }
+
+    // Debug: Verificar camadas do mapa
+    console.log('Camadas do mapa:', map.layers);
+    map.layers.forEach(layer => {
+      console.log(`Camada ${layer.name}:`, {
+        propriedades: layer.properties,
+        visível: layer.visible
+      });
+    });
+
+    // Adicionar imagem de fundo e ajustar escala
+    const bg = this.add.image(0, 0, 'mapImage').setOrigin(0, 0);
+    bg.setScale((map.widthInPixels / bg.width) - 0.01, (map.heightInPixels / bg.height) - 0.01);
+
+    // Criar as camadas usando ambos os tilesets
+    const groundLayer = map.createLayer('ground', [tileset1, tileset2], 0, 0);
+    const wallsLayer = map.createLayer('walls', [tileset1, tileset2], 0, 0);
+    const objectsLayer = map.createLayer('objects', [tileset1, tileset2], 0, 0);
+    const objects2Layer = map.createLayer('objects2', [tileset1, tileset2], 0, 0);
+    const objects3Layer = map.createLayer('objects3', [tileset1, tileset2], 0, 0);
+    const objects4Layer = map.createLayer('objects4', [tileset1, tileset2], 0, 0);
+
+    // Debug: Verificar se as camadas foram criadas
+    console.log('Camadas criadas:', {
+      groundLayer: !!groundLayer,
+      wallsLayer: !!wallsLayer,
+      objectsLayer: !!objectsLayer,
+      objects2Layer: !!objects2Layer,
+      objects3Layer: !!objects3Layer,
+      objects4Layer: !!objects4Layer
+    });
+
+    // Procurar o tile 1547 em qualquer camada de tile
+    let startX = 2 * map.tileWidth;
+    let startY = 2 * map.tileHeight;
+    map.layers.forEach(layer => {
+      if (layer.tilemapLayer) {
+        layer.tilemapLayer.forEachTile(tile => {
+          if (tile.index === 1547) {
+            startX = tile.pixelX + map.tileWidth / 2;
+            startY = tile.pixelY + map.tileHeight / 2;
+          }
+        });
+      }
+    });
+
+    this.player = {
+      sprite: this.physics.add.sprite(startX, startY, 'player'),
+      inventory: [],
+      stats: {
+        clearance: "Branco",
+        implants: []
+      }
+    };
+    this.player.sprite.setSize(12, 12);
+    this.player.sprite.setOffset(2, 2);
+
+    // Configurar a câmera
+    this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+    this.cameras.main.startFollow(this.player.sprite);
+    this.cameras.main.setZoom(1);
+    this.cameras.main.setRoundPixels(true);
+    
+    // Configurar colisões para todas as camadas
+    const collidableLayers = [wallsLayer, objectsLayer, objects2Layer, objects3Layer, objects4Layer];
+    collidableLayers.forEach(layer => {
+      if (layer) {
+        // Verifica se a camada tem a propriedade collides: true
+        const layerHasCollision = layer.layer.properties?.some(
+          (prop: any) => prop.name === 'collides' && prop.value === true
+        );
+        if (layerHasCollision) {
+          // Ativa colisão para todos os tiles da camada
+          layer.setCollisionBetween(0, 9999, true);
+          this.physics.add.collider(this.player.sprite, layer);
+          console.log(`Colisão ativada para a camada ${layer.layer.name} por propriedade da camada.`);
+        } else {
+          // Mantém a colisão por propriedade de tile também
+          layer.setCollisionByProperty({ collides: true });
+          this.physics.add.collider(this.player.sprite, layer);
+        }
+      }
+    });
+    
+    // NPCs e input
     this.setupNPCs();
     this.setupInput();
+
+    // Carregar a camada de interação
+    const interactionLayer = map.getObjectLayer('interaction');
+    console.log('Interaction layer:', interactionLayer); // Debug log
+    
+    if (interactionLayer) {
+      this.interactionPoints = interactionLayer.objects.map(obj => {
+        console.log('Interaction object:', obj); // Debug log
+        return {
+          x: obj.x || 0,
+          y: obj.y || 0,
+          dialog: obj.properties?.find((p: { name: string; value: string }) => p.name === 'interaction')?.value === 'JBL' 
+            ? 'Caraca essa JBL depois do upgrade ficou bem forte botente'
+            : obj.properties?.find((p: { name: string; value: string }) => p.name === 'interaction')?.value || ''
+        };
+      });
+      console.log('Interaction points:', this.interactionPoints); // Debug log
+    }
   }
 
   private initializeGameSystems(): void {
     // Add Game Boy Color pipeline
     const renderer = this.game.renderer as Phaser.Renderer.WebGL.WebGLRenderer;
-    renderer.pipelines.add('GBEffect', new GBPipeline(this.game));
-    
-    // Initialize Game Boy Color effect
-    this.gbEffect = new GBEffect(this);
+    if (renderer && (renderer as any).pipelines) {
+      renderer.pipelines.add('GBEffect', new GBPipeline(this.game));
+      // Initialize Game Boy Color effect
+      this.gbEffect = new GBEffect(this);
+    } else {
+      // Tenta novamente após um pequeno delay
+      this.time.delayedCall(100, () => this.initializeGameSystems());
+    }
   }
 
   private setupGameWorld(): void {
@@ -219,18 +357,28 @@ export default class GameScene extends Scene {
     if (!this.input.keyboard) return;
     
     const spaceKey = this.input.keyboard.addKey(Input.Keyboard.KeyCodes.SPACE);
-    if (this.input.keyboard.checkDown(spaceKey)) {
+    if (spaceKey.isDown) {
+      console.log('Space key pressed'); // Debug log
       this.checkNPCInteractions();
       this.checkObjectInteractions();
+      this.checkInteractionPoints();
     }
   }
 
   private checkNPCInteractions(): void {
     const playerBounds = this.player.sprite.getBounds();
+    const interactionDistance = 64; // Aumentar a distância de interação
     
     this.npcs.forEach((npc, id) => {
       const npcBounds = npc.sprite.getBounds();
-      if (Phaser.Geom.Intersects.RectangleToRectangle(playerBounds, npcBounds)) {
+      const distance = Phaser.Math.Distance.Between(
+        playerBounds.centerX,
+        playerBounds.centerY,
+        npcBounds.centerX,
+        npcBounds.centerY
+      );
+      
+      if (distance <= interactionDistance) {
         this.showDialog(npc);
       }
     });
@@ -238,6 +386,37 @@ export default class GameScene extends Scene {
 
   private checkObjectInteractions(): void {
     // Implementar interação com objetos do escritório
+  }
+
+  private checkInteractionPoints(): void {
+    if (!this.interactionPoints) {
+      console.log('No interaction points found');
+      return;
+    }
+
+    const playerBounds = this.player.sprite.getBounds();
+    const interactionDistance = 24;
+
+    for (const point of this.interactionPoints) {
+      const distance = Phaser.Math.Distance.Between(
+        playerBounds.centerX,
+        playerBounds.centerY,
+        point.x,
+        point.y
+      );
+
+      console.log('Distance to interaction point:', distance); // Debug log
+
+      if (distance <= interactionDistance) {
+        console.log('Showing dialog for point:', point); // Debug log
+        this.showDialog({
+          sprite: this.add.sprite(0, 0, 'player'),
+          dialog: [point.dialog],
+          currentDialogIndex: 0
+        });
+        break;
+      }
+    }
   }
 
   private createOfficeMap(): MapLayers | null {
@@ -341,11 +520,11 @@ export default class GameScene extends Scene {
     const startX = 2 * 16;
     const startY = 2 * 16;
 
-    const playerSprite = this.physics.add.sprite(startX + 8, startY + 8, 'player');
+    const playerSprite = this.physics.add.sprite(startX, startY, 'player');
     
-    // Ajustar o tamanho do corpo de colisão do jogador
-    playerSprite.setSize(14, 14); // Ligeiramente menor que o tile
-    playerSprite.setOffset(1, 1); // Centralizar a colisão
+    // Ajustar o tamanho do corpo de colisão do jogador para ficar mais próximo dos objetos
+    playerSprite.setSize(12, 12); // Reduzido de 14 para 12
+    playerSprite.setOffset(2, 2); // Ajustado de 1 para 2 para centralizar melhor
     
     this.player = {
       sprite: playerSprite,
@@ -359,6 +538,7 @@ export default class GameScene extends Scene {
     // Configurar a câmera para seguir o player
     this.cameras.main.startFollow(playerSprite);
     this.cameras.main.setBounds(0, 0, this.office.OFFICE_LAYOUT[0].length * 16, this.office.OFFICE_LAYOUT.length * 16);
+    this.cameras.main.setZoom(2); // Aumentar o zoom para 2x
   }
 
   private createNPCs(): void {
@@ -370,6 +550,12 @@ export default class GameScene extends Scene {
       );
 
       this.physics.add.existing(npcSprite);
+      
+      // Reduzir o tamanho da colisão do NPC
+      if (npcSprite.body) {
+        (npcSprite.body as Physics.Arcade.Body).setSize(8, 8);
+        (npcSprite.body as Physics.Arcade.Body).setOffset(4, 4);
+      }
       
       // Tornar o NPC imóvel durante colisões
       if (npcSprite.body) {
@@ -395,6 +581,11 @@ export default class GameScene extends Scene {
 
   private updateNPCs(): void {
     this.npcs.forEach(npc => {
+      // Dr. Lion não se move
+      if (npc.sprite.texture.key === 'lion') {
+        return;
+      }
+
       if (!npc.patrolPoints) {
         // Definir pontos de patrulha para o NPC
         const tileSize = 16;
@@ -478,52 +669,55 @@ export default class GameScene extends Scene {
     this.dialogActive = true;
     const dialogText = npc.dialog[npc.currentDialogIndex];
 
-    // Ajustar tamanho proporcional à tela do jogo
+    // Usar as dimensões da tela do jogo
     const screenWidth = Number(this.game.config.width);
     const screenHeight = Number(this.game.config.height);
     
-    const dialogWidth = screenWidth * 1;
-    const dialogHeight = screenHeight * 0.35;
-    const padding = 11;
-
+    // Calcular posições baseadas na tela
     const x = screenWidth / 2;
-    const y = screenHeight - (dialogHeight / 2) - padding;
+    const y = screenHeight - (screenHeight * 0.2); // 20% da altura da tela do fundo
 
     // Criar a imagem do rosto por trás
-    const faceImage = this.add.image(x - dialogWidth/99 + padding * 3, y - dialogHeight/1.1, 'lion2');
-    faceImage.setScale(0.12);
+    const faceImage = this.add.image(x - screenWidth/4, y - screenHeight/4, 'lionface');
+    faceImage.setScrollFactor(0);
+    faceImage.setScale(0.3);
     faceImage.setDepth(0);
 
     // Criar borda externa (branca)
-    const outerBorder = this.add.rectangle(x, y, dialogWidth, dialogHeight, 0xFFFFFF);
+    const outerBorder = this.add.rectangle(x, y, screenWidth * 0.9, screenHeight * 0.3, 0xFFFFFF);
+    outerBorder.setScrollFactor(0);
     outerBorder.setDepth(1);
     
     // Criar borda interna (preta)
-    const innerBorder = this.add.rectangle(x, y, dialogWidth - 4, dialogHeight - 4, 0x000000);
+    const innerBorder = this.add.rectangle(x, y, screenWidth * 0.9 - 4, screenHeight * 0.3 - 4, 0x000000);
+    innerBorder.setScrollFactor(0);
     innerBorder.setDepth(1);
     
     // Criar fundo branco para o texto
-    const background = this.add.rectangle(x, y, dialogWidth - 8, dialogHeight - 8, 0xe43675);
+    const background = this.add.rectangle(x, y, screenWidth * 0.9 - 8, screenHeight * 0.3 - 8, 0xe43675);
+    background.setScrollFactor(0);
     background.setDepth(1);
 
     // Adicionar o nome do NPC acima da imagem
-    const nameText = this.add.text(x - dialogWidth/99 + padding * 3, y - dialogHeight/1.05 - 42 , 'Dr. Lion', {
+    const nameText = this.add.text(x - screenWidth/4, y - screenHeight/4 - 20, 'Dr. Lion', {
       fontFamily: 'monospace',
-      fontSize: '8px',
+      fontSize: '16px',
       color: '#000000',
       align: 'center'
     });
+    nameText.setScrollFactor(0);
     nameText.setOrigin(0.5, 0);
-    nameText.setDepth(2); // Centralizar o texto abaixo da imagem
+    nameText.setDepth(2);
     
     // Criar o texto do diálogo
-    const text = this.add.text(x - dialogWidth/1.8 + padding * 2, y - dialogHeight/3, dialogText, {
+    const text = this.add.text(x - screenWidth/3, y - screenHeight/8, dialogText, {
       fontFamily: 'monospace',
-      fontSize: '8px',
+      fontSize: '16px',
       color: '#000000',
       align: 'left',
-      wordWrap: { width: dialogWidth - (padding * 4) }
+      wordWrap: { width: screenWidth * 0.6 }
     });
+    text.setScrollFactor(0);
     text.setDepth(2);
 
     // Armazenar referências para poder fechar o diálogo depois

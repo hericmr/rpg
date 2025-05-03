@@ -1,3 +1,6 @@
+import BootScene from './scenes/BootScene';
+import MenuScene from './scenes/MenuScene';
+import VideoScene from './scenes/VideoScene';
 import GameScene from './scenes/GameScene';
 import { Types } from 'phaser';
 import { GBC_COLORS } from './config/colors';
@@ -5,16 +8,19 @@ import { GBC_COLORS } from './config/colors';
 export const gameConfig: Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: 'game-container',
-  width: 240,  // Increased from 160
-  height: 216, // Increased from 144
+  width: 360,
+  height: 246,
   pixelArt: true,
   backgroundColor: GBC_COLORS.BG_DARK,
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
-    zoom: 3, // Reduced zoom to compensate for larger base size
-    width: 240,
-    height: 216
+    width: 360,
+    height: 240,
+    min: {
+      width: 200,
+      height: 150
+    }
   },
   physics: {
     default: 'arcade',
@@ -28,5 +34,5 @@ export const gameConfig: Types.Core.GameConfig = {
     pixelArt: true,
     roundPixels: true
   },
-  scene: GameScene
+  scene: [BootScene, MenuScene, VideoScene, GameScene]
 }; 
