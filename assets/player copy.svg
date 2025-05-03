@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Capuz -->
+  <path d="M10 6 Q16 0 22 6 Q24 10 16 14 Q8 10 10 6" fill="#222" stroke="#0f0" stroke-width="0.5"/>
+  <!-- Cabeça com visor -->
+  <circle cx="16" cy="10" r="5" fill="#111" stroke="#0ff" stroke-width="1"/>
+  <!-- Visor AR -->
+  <rect x="13" y="8" width="6" height="2" fill="#0ff" rx="1"/>
+  <!-- Corpo -->
+  <rect x="12" y="15" width="8" height="10" fill="#222" stroke="#0f0" stroke-width="1"/>
+  <!-- Braço com teclado -->
+  <rect x="8" y="15" width="4" height="8" fill="#222" stroke="#0f0" stroke-width="1"/>
+  <rect x="8.5" y="17" width="3" height="1.5" fill="#0ff"/>
+  <!-- Braço normal -->
+  <rect x="20" y="15" width="4" height="8" fill="#222" stroke="#0f0" stroke-width="1"/>
+  <!-- Pernas -->
+  <rect x="12" y="25" width="3" height="4" fill="#111" stroke="#0f0" stroke-width="1"/>
+  <rect x="17" y="25" width="3" height="4" fill="#111" stroke="#0f0" stroke-width="1"/>
+  <!-- Circuitos -->
+  <circle cx="11" cy="10" r="0.5" fill="#0f0"/>
+  <circle cx="21" cy="10" r="0.5" fill="#0f0"/>
+  <!-- Aura de dados -->
+  <path d="M4 4 L6 6 M26 4 L24 6 M4 28 L6 26 M26 28 L24 26" stroke="#0f0" stroke-width="0.5" stroke-dasharray="1,1"/>
+</svg>
