@@ -66,21 +66,23 @@ export default class MenuScene extends Scene {
         this.title.setAlpha(0);
         this.title.setDepth(10);
 
-        // Add glitch animation to title
+        // Add glitch animation to title with random scale and rotation
         this.time.addEvent({
             delay: 300,
             callback: () => {
                 const randomScale = 0.5 + (Math.random() * 0.2 - 0.1);
+                const randomRotation = Math.random() * 0.1 - 0.2; // Random rotation between -0.05 and 0.05 radians
                 this.title.setScale(randomScale);
+                this.title.setRotation(randomRotation);
             },
             loop: true
         });
 
         // Create year counter with cyberpunk style
-        this.yearCounter = this.add.text(screenWidth / 2.05, screenHeight * 0.30, '0000', {
+        this.yearCounter = this.add.text(screenWidth / 2.06, screenHeight * 0.30, '0000', {
             fontSize: '9px',
             fontFamily: 'monospace',
-            color: '#00ff77'
+            color: '#ffff00'
         });
         this.yearCounter.setOrigin(0.55);
         this.yearCounter.setAlpha(0);
@@ -90,19 +92,22 @@ export default class MenuScene extends Scene {
         });
 
         // Create character with initial position off-screen
-        this.character = this.add.image(-50, screenHeight * 0.85, 'character');
+        this.character = this.add.image(-80, screenHeight * 0.85, 'character');
         this.character.setScale(0.5);
 
         // Create xumbro with initial position off-screen
-        this.xumbro = this.add.image(screenWidth + 50, screenHeight * 0.85, 'xumbro');
+        this.xumbro = this.add.image(screenWidth + 80, screenHeight * 0.85, 'xumbro');
         this.xumbro.setScale(0.5);
 
-        // Animate character entry
-        this.tweens.add({
-            targets: this.character,
-            x: screenWidth * 0.15,
-            duration: 1000,
-            ease: 'Power2'
+        // Delay character entry animation
+        this.time.delayedCall(1500, () => {
+            // Animate character entry
+            this.tweens.add({
+                targets: this.character,
+                x: screenWidth * 0.15,
+                duration: 1000,
+                ease: 'Power2'
+            });
         });
 
         // Animate xumbro entry after delay
@@ -124,21 +129,76 @@ export default class MenuScene extends Scene {
                 this.yearCounter.setAlpha(1);
                 this.animateYearCounter();
             });
+        });
 
-            // Create and show button after counter finishes
-            this.time.delayedCall(2500, () => {
-                this.createButton();
+        // Create and show button after 3 seconds
+        this.time.delayedCall(3000, () => {
+            this.createButton();
+            this.button.setAlpha(0);
+            this.tweens.add({
+                targets: this.button,
+                alpha: 1,
+                duration: 500,
+                ease: 'Power2'
             });
         });
+        this.startText = this.add.text(screenWidth / 2, screenHeight * 0.95, 'APERTE ESPAÇO', {
+            fontSize: '8px',
+            fontFamily: 'monospace',
+            color: '#1a3300',
+            backgroundColor: '#ffff00',
+            padding: { x: 4, y: 2 },
+            fixedWidth: 90,
+            fixedHeight: 12,
+            align: 'center'
+        });
+        this.startText.setOrigin(0.5);
+        this.startText.setAlpha(0);
+        
+        // Add fade in/out animation to start text
+        this.tweens.add({
+            targets: this.startText,
+            alpha: { from: 0, to: 1 },
+            duration: 800,
+            repeat: -1,
+            yoyo: true
+        });
+
+        this.input.keyboard?.on('keydown-SPACE', () => {
+            this.cameras.main.flash(500, 255, 255, 0);
+            
+            const glitchDuration = 500;
+            const glitchSteps = 5;
+            for (let i = 0; i < glitchSteps; i++) {
+                this.time.delayedCall(i * (glitchDuration / glitchSteps), () => {
+                    this.button.setPosition(
+                        screenWidth / 2 + (Math.random() - 0.5) * 2,
+                        screenHeight * 0.85 + (Math.random() - 0.5) * 2
+                    );
+                });
+            }
+            
+            this.tweens.add({
+                targets: [this.background, this.title, this.button, this.startText, this.character, this.xumbro],
+                alpha: 0,
+                duration: 500,
+                ease: 'Power2',
+                onComplete: () => {
+                    this.menuMusic.stop();
+                    this.scene.start('VideoScene');
+                }
+            });
+        });
+        
+        this.scale.on('resize', this.handleResize, this);
     }
 
     private createButton(): void {
         const screenWidth = this.cameras.main.width;
         const screenHeight = this.cameras.main.height;
-
-        this.button = this.add.image(screenWidth / 2, screenHeight * 0.85, 'button');
+        this.button = this.add.image(screenWidth / 2, screenHeight * 0.85, 'button').setVisible(false);
         this.button.setScale(0.5);
-        this.button.setAlpha(0);
+        this.button.setAlpha(1);
         this.button.setInteractive();
         
         const buttonGlow = this.add.graphics();
@@ -150,14 +210,13 @@ export default class MenuScene extends Scene {
             this.button.displayHeight + 4,
             4
         );
-        buttonGlow.setAlpha(0);
+        buttonGlow.setAlpha(0.3);
         
         this.button.on('pointerover', () => {
             this.tweens.add({
                 targets: [this.button, buttonGlow],
                 scaleX: 0.6,
                 scaleY: 0.6,
-                alpha: 1,
                 duration: 200,
                 ease: 'Power2'
             });
@@ -168,14 +227,14 @@ export default class MenuScene extends Scene {
                 targets: [this.button, buttonGlow],
                 scaleX: 0.5,
                 scaleY: 0.5,
-                alpha: { value: 0.8, duration: 300 },
                 duration: 200,
                 ease: 'Power2'
             });
         });
 
         this.button.on('pointerdown', () => {
-            this.cameras.main.flash(500, 0, 255, 0);
+            // Flash the screen with a yellow color (RGB: 255,255,0) for 500ms
+            this.cameras.main.flash(500, 255, 255, 0);
             
             const glitchDuration = 500;
             const glitchSteps = 5;
@@ -199,72 +258,6 @@ export default class MenuScene extends Scene {
                 }
             });
         });
-
-        this.startText = this.add.text(screenWidth / 2, screenHeight * 0.95, 'APERTE ESPAÇO PARA COMEÇAR', {
-            fontSize: '8px',
-            fontFamily: 'monospace',
-            color: '#00ff00',
-            stroke: '#003300',
-            strokeThickness: 1,
-            padding: { x: 4, y: 2 },
-            backgroundColor: '#00000066'
-        });
-        this.startText.setOrigin(0.5);
-        this.startText.setAlpha(0);
-        this.input.keyboard?.on('keydown-SPACE', () => {
-            this.cameras.main.flash(500, 0, 255, 0);
-            
-            const glitchDuration = 500;
-            const glitchSteps = 5;
-            for (let i = 0; i < glitchSteps; i++) {
-                this.time.delayedCall(i * (glitchDuration / glitchSteps), () => {
-                    this.button.setPosition(
-                        screenWidth / 2 + (Math.random() - 0.5) * 2,
-                        screenHeight * 0.85 + (Math.random() - 0.5) * 2
-                    );
-                });
-            }
-            
-            this.tweens.add({
-                targets: [this.background, this.title, this.button, this.startText, this.character, this.xumbro],
-                alpha: 0,
-                duration: 500,
-                ease: 'Power2',
-                onComplete: () => {
-                    this.menuMusic.stop();
-                    this.scene.start('VideoScene');
-                }
-            });
-        });
-        
-        this.tweens.add({
-            targets: [this.button, buttonGlow, this.startText],
-            alpha: 0.8,
-            duration: 1000,
-            ease: 'Power2',
-            onComplete: () => {
-                this.tweens.add({
-                    targets: buttonGlow,
-                    alpha: { from: 0.3, to: 0.8 },
-                    duration: 1500,
-                    yoyo: true,
-                    repeat: -1,
-                    ease: 'Sine.easeInOut'
-                });
-            }
-        });
-        
-        this.tweens.add({
-            targets: this.startText,
-            alpha: { from: 1, to: 0.6 },
-            duration: 1500,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut',
-            delay: 500
-        });
-
-        this.scale.on('resize', this.handleResize, this);
     }
 
     private handleResize(): void {
@@ -285,9 +278,6 @@ export default class MenuScene extends Scene {
             this.xumbro.setPosition(newWidth * 0.85, newHeight * 0.85);
         }
         
-        if (this.button) {
-            this.button.setPosition(newWidth / 2, newHeight * 0.85);
-        }
         
         if (this.startText) {
             this.startText.setPosition(newWidth / 2, newHeight * 0.95);

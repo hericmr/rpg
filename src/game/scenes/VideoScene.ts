@@ -26,27 +26,26 @@ export default class VideoScene extends Scene {
         this.video.setDisplaySize(videoWidth, videoHeight);
 
         // Add skip text with cyberpunk style
-        this.skipText = this.add.text(screenWidth - 10, screenHeight - 10, 'pular intro', {
+        this.skipText = this.add.text(screenWidth - 10, screenHeight - 10, 'pular intro -> ESPAÇO', {
             fontSize: '8px',
             fontFamily: 'monospace',
-            color: '#00ff00',
-            stroke: '#003300',
-            strokeThickness: 1,
+            color: '#1a3300',
+            backgroundColor: '#ffff00',
             padding: { x: 4, y: 2 },
-            backgroundColor: '#00000066'
+            fixedWidth: 90,
+            fixedHeight: 12,
+            align: 'center'
         });
         this.skipText.setOrigin(1, 1);
-        this.skipText.setAlpha(0.8);
-        this.skipText.setInteractive();
+        this.skipText.setAlpha(0);
 
-        // Add glow effect to skip text
+        // Add fade in/out animation to skip text
         this.tweens.add({
             targets: this.skipText,
-            alpha: { from: 0.8, to: 0.4 },
-            duration: 1500,
-            yoyo: true,
+            alpha: { from: 0, to: 1 },
+            duration: 800,
             repeat: -1,
-            ease: 'Sine.easeInOut'
+            yoyo: true
         });
 
         // Start video with fade in
@@ -55,6 +54,13 @@ export default class VideoScene extends Scene {
 
         // Handle skip
         this.skipText.on('pointerdown', () => {
+            this.cameras.main.flash(500, 0, 255, 0);
+            this.video.stop();
+            this.scene.start('GameScene');
+        });
+
+        // Handle space key to skip
+        this.input.keyboard?.on('keydown-SPACE', () => {
             this.cameras.main.flash(500, 0, 255, 0);
             this.video.stop();
             this.scene.start('GameScene');
