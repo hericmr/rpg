@@ -20,6 +20,7 @@ export default class MenuScene extends Scene {
         const publicUrl = process.env.PUBLIC_URL || '';
         this.load.image('background', `${publicUrl}/assets/menu.png`);
         this.load.image('title', `${publicUrl}/assets/titulo.svg`);
+        this.load.image('button', `${publicUrl}/assets/mapa.png`);
 
         this.load.audio('menuMusic', `${publicUrl}/assets/msc.wav`);
         this.load.image('character', `${publicUrl}/assets/character.png`);
@@ -132,7 +133,7 @@ export default class MenuScene extends Scene {
         });
 
         // Create and show button after 3 seconds
-        this.time.delayedCall(3000, () => {
+        this.time.delayedCall(200, () => {
             this.createButton();
             this.button.setAlpha(0);
             this.tweens.add({

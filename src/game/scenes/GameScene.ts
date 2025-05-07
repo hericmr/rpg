@@ -83,6 +83,17 @@ export default class GameScene extends Scene {
     window.addEventListener('focus', () => this.handleGameResume());
   }
 
+  init(data: { fromRight?: boolean }): void {
+    // Se o jogador veio da direita, posicioná-lo no lado direito do mapa
+    if (data?.fromRight) {
+      const map = this.make.tilemap({ key: 'mapa' });
+      if (this.player?.sprite) {
+        this.player.sprite.x = map.widthInPixels - 32;
+        this.player.sprite.y = map.heightInPixels / 2;
+      }
+    }
+  }
+
   private handleGamePause(): void {
     // Pausar todas as tweens ativas
     this.tweens.pauseAll();
@@ -323,34 +334,37 @@ export default class GameScene extends Scene {
   }
 
   update(): void {
-    if (!this.cursors || !this.player) return;
+    if (!this.player?.sprite) return;
 
-    const speed = 160;
-    const player = this.player;
-
-    // Priorizar movimento horizontal
-    if (this.cursors.left?.isDown) {
-      player.sprite.setVelocityX(-speed);
-      player.sprite.setVelocityY(0);
-    } else if (this.cursors.right?.isDown) {
-      player.sprite.setVelocityX(speed);
-      player.sprite.setVelocityY(0);
+    // Verificar se o jogador saiu pela direita
+    const map = this.make.tilemap({ key: 'mapa' });
+    if (this.player.sprite.x >= map.widthInPixels) {
+      this.scene.start('VarandaScene');
+      return;
     }
-    // Se não houver movimento horizontal, permitir movimento vertical
-    else if (this.cursors.up?.isDown) {
-      player.sprite.setVelocityX(0);
-      player.sprite.setVelocityY(-speed);
-    } else if (this.cursors.down?.isDown) {
-      player.sprite.setVelocityX(0);
-      player.sprite.setVelocityY(speed);
+
+    if (this.dialogActive) return;
+
+    // Movimento horizontal
+    if (this.cursors.left?.isDown) {
+      this.player.sprite.setVelocityX(-100);
+    } else if (this.cursors.right?.isDown) {
+      this.player.sprite.setVelocityX(100);
     } else {
-      // Nenhuma tecla pressionada
-      player.sprite.setVelocityX(0);
-      player.sprite.setVelocityY(0);
+      this.player.sprite.setVelocityX(0);
+    }
+
+    // Movimento vertical
+    if (this.cursors.up?.isDown) {
+      this.player.sprite.setVelocityY(-100);
+    } else if (this.cursors.down?.isDown) {
+      this.player.sprite.setVelocityY(100);
+    } else {
+      this.player.sprite.setVelocityY(0);
     }
     
-    this.updateNPCs();
     this.checkInteractions();
+    this.updateNPCs();
   }
 
   private checkInteractions(): void {
@@ -669,13 +683,11 @@ export default class GameScene extends Scene {
     this.dialogActive = true;
     const dialogText = npc.dialog[npc.currentDialogIndex];
 
-    // Usar as dimensões da tela do jogo
-    const screenWidth = Number(this.game.config.width);
-    const screenHeight = Number(this.game.config.height);
-    
-    // Calcular posições baseadas na tela
+    // Criar o diálogo
+    const screenWidth = this.cameras.main.width;
+    const screenHeight = this.cameras.main.height;
     const x = screenWidth / 2;
-    const y = screenHeight - (screenHeight * 0.2); // 20% da altura da tela do fundo
+    const y = screenHeight * 0.7;
 
     // Criar a imagem do rosto por trás
     const faceImage = this.add.image(x - screenWidth/4, y - screenHeight/4, 'lionface');
@@ -698,33 +710,32 @@ export default class GameScene extends Scene {
     background.setScrollFactor(0);
     background.setDepth(1);
 
-    // Adicionar o nome do NPC acima da imagem
-    const nameText = this.add.text(x - screenWidth/4, y - screenHeight/4 - 20, 'Dr. Lion', {
-      fontFamily: 'monospace',
-      fontSize: '16px',
-      color: '#000000',
-      align: 'center'
-    });
-    nameText.setScrollFactor(0);
-    nameText.setOrigin(0.5, 0);
-    nameText.setDepth(2);
-    
     // Criar o texto do diálogo
-    const text = this.add.text(x - screenWidth/3, y - screenHeight/8, dialogText, {
+    const text = this.add.text(x, y, dialogText, {
+      fontSize: '12px',
       fontFamily: 'monospace',
-      fontSize: '16px',
-      color: '#000000',
-      align: 'left',
-      wordWrap: { width: screenWidth * 0.6 }
+      color: '#FFFFFF',
+      wordWrap: { width: screenWidth * 0.8 }
     });
+    text.setOrigin(0.5);
     text.setScrollFactor(0);
     text.setDepth(2);
 
-    // Armazenar referências para poder fechar o diálogo depois
+    // Criar o nome do NPC
+    const nameText = this.add.text(x - screenWidth * 0.4, y - screenHeight * 0.12, 'LION', {
+      fontSize: '12px',
+      fontFamily: 'monospace',
+      color: '#FFFFFF'
+    });
+    nameText.setOrigin(0.5);
+    nameText.setScrollFactor(0);
+    nameText.setDepth(2);
+
+    // Armazenar referências para o diálogo
     npc.dialogBox = {
-      background, 
-      text, 
-      border: outerBorder,
+      background,
+      text,
+      border: innerBorder,
       innerBorder,
       outerBorder,
       faceImage,
@@ -732,9 +743,11 @@ export default class GameScene extends Scene {
     };
 
     // Criar timer para fechar o diálogo após 6 segundos
-    npc.dialogBox.timer = this.time.delayedCall(6000, () => {
-      this.closeDialog(npc);
-    });
+    if (npc.dialogBox) {
+      npc.dialogBox.timer = this.time.delayedCall(6000, () => {
+        this.closeDialog(npc);
+      });
+    }
 
     // Adicionar tecla de espaço para avançar o diálogo
     const spaceKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);

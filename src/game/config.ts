@@ -2,6 +2,7 @@ import BootScene from './scenes/BootScene';
 import MenuScene from './scenes/MenuScene';
 import VideoScene from './scenes/VideoScene';
 import GameScene from './scenes/GameScene';
+import VarandaScene from './scenes/VarandaScene';
 import { Types } from 'phaser';
 import { GBC_COLORS } from './config/colors';
 
@@ -34,5 +35,5 @@ export const gameConfig: Types.Core.GameConfig = {
     pixelArt: true,
     roundPixels: true
   },
-  scene: [BootScene, MenuScene, VideoScene, GameScene]
+  scene: [BootScene, MenuScene, VideoScene, GameScene, VarandaScene]
 }; 
