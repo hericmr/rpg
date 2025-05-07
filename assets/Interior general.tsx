@@ -1,4 +1,14 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.11.1" name="Interior general" tilewidth="16" tileheight="16" tilecount="8032" columns="16">
- <image source="Interior general.png" width="256" height="8032"/>
-</tileset>
+{ "columns":16,
+ "image":"Interior general.png",
+ "imageheight":8032,
+ "imagewidth":256,
+ "margin":0,
+ "name":"Interior general",
+ "spacing":0,
+ "tilecount":8032,
+ "tiledversion":"1.11.1",
+ "tileheight":16,
+ "tilewidth":16,
+ "type":"tileset",
+ "version":"1.10"
+}
