@@ -148,7 +148,7 @@ export default class GameScene extends Scene {
       frameHeight: 16
     });
     
-    this.load.spritesheet('lion', `${publicUrl}/assets/lion.png`, {
+    this.load.spritesheet('lion', `${publicUrl}/assets/lion2.png`, {
       frameWidth: 16,
       frameHeight: 16
     });
@@ -690,9 +690,9 @@ export default class GameScene extends Scene {
     const y = screenHeight * 0.7;
 
     // Criar a imagem do rosto por trás
-    const faceImage = this.add.image(x - screenWidth/4, y - screenHeight/4, 'lionface');
+    const faceImage = this.add.image(x - screenWidth/4, y - screenHeight/2, 'lionface');
     faceImage.setScrollFactor(0);
-    faceImage.setScale(0.3);
+    faceImage.setScale(0.5);
     faceImage.setDepth(0);
 
     // Criar borda externa (branca)
@@ -714,7 +714,7 @@ export default class GameScene extends Scene {
     const text = this.add.text(x, y, dialogText, {
       fontSize: '12px',
       fontFamily: 'monospace',
-      color: '#FFFFFF',
+      color: '#000000',
       wordWrap: { width: screenWidth * 0.8 }
     });
     text.setOrigin(0.5);
@@ -722,10 +722,10 @@ export default class GameScene extends Scene {
     text.setDepth(2);
 
     // Criar o nome do NPC
-    const nameText = this.add.text(x - screenWidth * 0.4, y - screenHeight * 0.12, 'LION', {
-      fontSize: '12px',
+    const nameText = this.add.text(x - screenWidth * 0.4, y - screenHeight * 0.12, 'DR. Lion', {
+      fontSize: '15px',
       fontFamily: 'monospace',
-      color: '#FFFFFF'
+      color: '#000000'
     });
     nameText.setOrigin(0.5);
     nameText.setScrollFactor(0);
