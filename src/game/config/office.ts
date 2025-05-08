@@ -78,7 +78,7 @@ export const SANTOSPUNK_CORPORATE_OFFICE: CorporateOffice = {
     {
       id: 'exec_1',
       name: 'Dr. Lion',
-      position: {x: 20, y: 8},
+      position: {x: 24, y: 6},
       implants: ['Neural Link', 'Enhanced Vision'],
       clearance: 'Preto',
       dialog: [

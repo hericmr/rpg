@@ -6,40 +6,13 @@ import { GBPipeline } from '../effects/GBPipeline';
 import { GBEffect } from '../effects/GBEffect';
 import { GBC_COLORS } from '../config/colors';
 import { CorporateOffice, SANTOSPUNK_CORPORATE_OFFICE, renderOfficeState } from '../config/office';
+import { BaseScene, NPC, Player } from './BaseScene';
 
 // Interfaces para melhor tipagem
 interface MapLayers {
   wallsLayer: GameObjects.Container;
   floorLayer: GameObjects.Container;
   objectsLayer: GameObjects.Container;
-}
-
-interface NPC {
-  sprite: GameObjects.Sprite;
-  dialog: string[];
-  currentDialogIndex: number;
-  patrolPoints?: {x: number, y: number}[];
-  currentPatrolIndex?: number;
-  isMoving?: boolean;
-  dialogBox?: {
-    background: GameObjects.Rectangle;
-    text: GameObjects.Text;
-    border: GameObjects.Rectangle;
-    innerBorder: GameObjects.Rectangle;
-    outerBorder: GameObjects.Rectangle;
-    faceImage?: GameObjects.Image;
-    nameText: GameObjects.Text;
-    timer?: Phaser.Time.TimerEvent;
-  };
-}
-
-interface Player {
-  sprite: Physics.Arcade.Sprite;
-  inventory: string[];
-  stats: {
-    clearance: string;
-    implants: string[];
-  };
 }
 
 interface NPCData {
@@ -51,32 +24,48 @@ interface NPCData {
     dialog: string[];
 }
 
-export default class GameScene extends Scene {
+export default class GameScene extends BaseScene {
   private office: CorporateOffice;
-  private player!: Player;
   private npcs: Map<string, NPC>;
   private mapLayers: MapLayers | null;
-  private cursors: {
+  private gbEffect!: GBEffect;
+  private currentTimeOfDay: string;
+  private securityLevel: string;
+  protected player!: Player;
+  protected cursors: {
     left?: Phaser.Input.Keyboard.Key;
     right?: Phaser.Input.Keyboard.Key;
     up?: Phaser.Input.Keyboard.Key;
     down?: Phaser.Input.Keyboard.Key;
+    space?: Phaser.Input.Keyboard.Key;
   } = {};
-  private dialogActive: boolean;
+  protected dialogActive: boolean;
+  protected interactionPoints?: { x: number; y: number; dialog: string }[];
   private closeDialogKey!: Input.Keyboard.Key;
-  private gbEffect!: GBEffect;
-  private currentTimeOfDay: string;
-  private securityLevel: string;
-  private interactionPoints?: { x: number; y: number; dialog: string }[];
+  private mapLayersCache: {
+    groundLayer: Phaser.Tilemaps.TilemapLayer | undefined;
+    wallsLayer: Phaser.Tilemaps.TilemapLayer | undefined;
+    cadeirasLayer: Phaser.Tilemaps.TilemapLayer | undefined;
+    mesasLayer: Phaser.Tilemaps.TilemapLayer | undefined;
+    computadoresLayer: Phaser.Tilemaps.TilemapLayer | undefined;
+    jblLayer: Phaser.Tilemaps.TilemapLayer | undefined;
+  } = {
+    groundLayer: undefined,
+    wallsLayer: undefined,
+    cadeirasLayer: undefined,
+    mesasLayer: undefined,
+    computadoresLayer: undefined,
+    jblLayer: undefined
+  };
 
   constructor() {
     super({ key: 'GameScene', active: false });
     this.office = renderOfficeState(SANTOSPUNK_CORPORATE_OFFICE, "manhã");
-    this.dialogActive = false;
     this.currentTimeOfDay = "manhã";
     this.securityLevel = this.office.META_DATA.securityLevel;
     this.npcs = new Map();
     this.mapLayers = null;
+    this.dialogActive = false;
 
     // Gerenciar eventos de visibilidade da janela
     window.addEventListener('blur', () => this.handleGamePause());
@@ -116,11 +105,11 @@ export default class GameScene extends Scene {
   preload(): void {
     const publicUrl = process.env.PUBLIC_URL || '';
     this.setupAssetLoading();
-    this.load.tilemapTiledJSON('mapa', `${publicUrl}/assets/mapa.tmx`);
-    this.load.image('Room_Builder_free_16x16', `${publicUrl}/assets/Room_Builder_free_16x16.png`);
+    this.load.tilemapTiledJSON('mapa', `${publicUrl}/assets/escritorio.json`);
     this.load.image('Interiors_free_16x16', `${publicUrl}/assets/tileset.png`);
+    this.load.image('Interior general', `${publicUrl}/assets/Interior general.png`);
     this.load.spritesheet('player', `${publicUrl}/assets/heric2.png`, { frameWidth: 16, frameHeight: 16 });
-    this.load.spritesheet('lion', `${publicUrl}/assets/lion.png`, { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('lion', `${publicUrl}/assets/lion2.png`, { frameWidth: 16, frameHeight: 16 });
     this.load.image('lionface', `${publicUrl}/assets/lion_2.png`);
     this.load.image('wall', `${publicUrl}/assets/wall.svg`);
     this.load.image('floor', `${publicUrl}/assets/floor.svg`);
@@ -163,73 +152,80 @@ export default class GameScene extends Scene {
   }
 
   create(): void {
-    // Configurar renderização pixel perfect
-    this.textures.get('player').setFilter(Phaser.Textures.FilterMode.NEAREST);
-    this.textures.get('lion').setFilter(Phaser.Textures.FilterMode.NEAREST);
-    this.textures.get('lionface').setFilter(Phaser.Textures.FilterMode.NEAREST);
-    this.textures.get('wall').setFilter(Phaser.Textures.FilterMode.NEAREST);
-    this.textures.get('floor').setFilter(Phaser.Textures.FilterMode.NEAREST);
-    this.textures.get('desk').setFilter(Phaser.Textures.FilterMode.NEAREST);
-    this.textures.get('chair').setFilter(Phaser.Textures.FilterMode.NEAREST);
-    this.textures.get('terminal').setFilter(Phaser.Textures.FilterMode.NEAREST);
-    this.textures.get('elevator').setFilter(Phaser.Textures.FilterMode.NEAREST);
-    
-    this.initializeGameSystems();
+    this.setupPixelPerfectRendering();
+    this.initializeGBEffect();
     
     const map = this.make.tilemap({ key: 'mapa' });
+    const tileset = map.addTilesetImage('Interior general', 'Interior general');
     
-    // Adicionar os tilesets
-    const tileset1 = map.addTilesetImage('Room_Builder_free_16x16', 'Room_Builder_free_16x16');
-    const tileset2 = map.addTilesetImage('Interiors_free_16x16', 'Interiors_free_16x16');
-    
-    if (!tileset1 || !tileset2) {
+    if (!tileset) {
       throw new Error('Tilesets não encontrados!');
     }
 
-    // Debug: Verificar camadas do mapa
-    console.log('Camadas do mapa:', map.layers);
-    map.layers.forEach(layer => {
-      console.log(`Camada ${layer.name}:`, {
-        propriedades: layer.properties,
-        visível: layer.visible
-      });
+    this.createMapLayers(map, tileset);
+    this.setupPlayerFromMap(map);
+    this.setupCamera(map.widthInPixels, map.heightInPixels);
+    this.setupCollisionsFromMap(map);
+    this.setupNPCs();
+    this.setupInput();
+    this.setupInteractions(map);
+  }
+
+  private setupPixelPerfectRendering(): void {
+    const textures = ['player', 'lion', 'lionface', 'wall', 'floor', 'desk', 'chair', 'terminal', 'elevator'];
+    textures.forEach(texture => {
+      this.textures.get(texture).setFilter(Phaser.Textures.FilterMode.NEAREST);
     });
+  }
 
-    // Adicionar imagem de fundo e ajustar escala
-    const bg = this.add.image(0, 0, 'mapImage').setOrigin(0, 0);
-    bg.setScale((map.widthInPixels / bg.width) - 0.01, (map.heightInPixels / bg.height) - 0.01);
+  private initializeGBEffect(): void {
+    const renderer = this.game.renderer as Phaser.Renderer.WebGL.WebGLRenderer;
+    if (renderer && (renderer as any).pipelines) {
+      renderer.pipelines.add('GBEffect', new GBPipeline(this.game));
+      this.gbEffect = new GBEffect(this);
+    } else {
+      this.time.delayedCall(100, () => this.initializeGBEffect());
+    }
+  }
 
-    // Criar as camadas usando ambos os tilesets
-    const groundLayer = map.createLayer('ground', [tileset1, tileset2], 0, 0);
-    const wallsLayer = map.createLayer('walls', [tileset1, tileset2], 0, 0);
-    const objectsLayer = map.createLayer('objects', [tileset1, tileset2], 0, 0);
-    const objects2Layer = map.createLayer('objects2', [tileset1, tileset2], 0, 0);
-    const objects3Layer = map.createLayer('objects3', [tileset1, tileset2], 0, 0);
-    const objects4Layer = map.createLayer('objects4', [tileset1, tileset2], 0, 0);
+  private createMapLayers(map: Phaser.Tilemaps.Tilemap, tileset: Phaser.Tilemaps.Tileset): void {
+    const groundLayer = map.createLayer('ground', tileset, 0, 0);
+    const wallsLayer = map.createLayer('walls', tileset, 0, 0);
+    const cadeirasLayer = map.createLayer('cadeiras', tileset, 0, 0);
+    const mesasLayer = map.createLayer('mesas', tileset, 0, 0);
+    const computadoresLayer = map.createLayer('computadores', tileset, 0, 0);
+    const jblLayer = map.createLayer('jbl', tileset, 0, 0);
 
-    // Debug: Verificar se as camadas foram criadas
-    console.log('Camadas criadas:', {
-      groundLayer: !!groundLayer,
-      wallsLayer: !!wallsLayer,
-      objectsLayer: !!objectsLayer,
-      objects2Layer: !!objects2Layer,
-      objects3Layer: !!objects3Layer,
-      objects4Layer: !!objects4Layer
-    });
+    this.mapLayersCache = {
+      groundLayer: groundLayer || undefined,
+      wallsLayer: wallsLayer || undefined,
+      cadeirasLayer: cadeirasLayer || undefined,
+      mesasLayer: mesasLayer || undefined,
+      computadoresLayer: computadoresLayer || undefined,
+      jblLayer: jblLayer || undefined
+    };
 
-    // Procurar o tile 1547 em qualquer camada de tile
+    if (!this.mapLayersCache.groundLayer || !this.mapLayersCache.wallsLayer || !this.mapLayersCache.cadeirasLayer || 
+        !this.mapLayersCache.mesasLayer || !this.mapLayersCache.computadoresLayer || 
+        !this.mapLayersCache.jblLayer) {
+      throw new Error('Erro ao criar camadas do mapa');
+    }
+  }
+
+  private setupPlayerFromMap(map: Phaser.Tilemaps.Tilemap): void {
+    // Posição inicial padrão
     let startX = 2 * map.tileWidth;
     let startY = 2 * map.tileHeight;
-    map.layers.forEach(layer => {
-      if (layer.tilemapLayer) {
-        layer.tilemapLayer.forEachTile(tile => {
-          if (tile.index === 1547) {
-            startX = tile.pixelX + map.tileWidth / 2;
-            startY = tile.pixelY + map.tileHeight / 2;
-          }
-        });
+
+    // Procurar pelo ponto de spawn do jogador na camada Char_start_place
+    const charStartLayer = map.objects.find(layer => layer.name === 'Char_start_place');
+    if (charStartLayer && charStartLayer.objects.length > 0) {
+      const spawnPoint = charStartLayer.objects[0];
+      if (typeof spawnPoint.x === 'number' && typeof spawnPoint.y === 'number') {
+        startX = spawnPoint.x;
+        startY = spawnPoint.y;
       }
-    });
+    }
 
     this.player = {
       sprite: this.physics.add.sprite(startX, startY, 'player'),
@@ -241,6 +237,7 @@ export default class GameScene extends Scene {
     };
     this.player.sprite.setSize(12, 12);
     this.player.sprite.setOffset(2, 2);
+    this.player.sprite.setScale(2);
 
     // Configurar a câmera
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
@@ -249,7 +246,7 @@ export default class GameScene extends Scene {
     this.cameras.main.setRoundPixels(true);
     
     // Configurar colisões para todas as camadas
-    const collidableLayers = [wallsLayer, objectsLayer, objects2Layer, objects3Layer, objects4Layer];
+    const collidableLayers = [this.mapLayersCache.groundLayer, this.mapLayersCache.wallsLayer, this.mapLayersCache.cadeirasLayer, this.mapLayersCache.mesasLayer, this.mapLayersCache.computadoresLayer, this.mapLayersCache.jblLayer];
     collidableLayers.forEach(layer => {
       if (layer) {
         // Verifica se a camada tem a propriedade collides: true
@@ -264,323 +261,64 @@ export default class GameScene extends Scene {
         } else {
           // Mantém a colisão por propriedade de tile também
           layer.setCollisionByProperty({ collides: true });
-          this.physics.add.collider(this.player.sprite, layer);
         }
       }
     });
-    
-    // NPCs e input
-    this.setupNPCs();
-    this.setupInput();
+  }
 
-    // Carregar a camada de interação
-    const interactionLayer = map.getObjectLayer('interaction');
-    console.log('Interaction layer:', interactionLayer); // Debug log
-    
-    if (interactionLayer) {
-      this.interactionPoints = interactionLayer.objects.map(obj => {
-        console.log('Interaction object:', obj); // Debug log
-        return {
-          x: obj.x || 0,
-          y: obj.y || 0,
-          dialog: obj.properties?.find((p: { name: string; value: string }) => p.name === 'interaction')?.value === 'JBL' 
-            ? 'Caraca essa JBL depois do upgrade ficou bem forte botente'
-            : obj.properties?.find((p: { name: string; value: string }) => p.name === 'interaction')?.value || ''
-        };
+  private setupCollisionsFromMap(map: Phaser.Tilemaps.Tilemap): void {
+    const collidableLayers = [
+      this.mapLayersCache.groundLayer,
+      this.mapLayersCache.wallsLayer,
+      this.mapLayersCache.cadeirasLayer,
+      this.mapLayersCache.mesasLayer,
+      this.mapLayersCache.computadoresLayer,
+      this.mapLayersCache.jblLayer
+    ].filter((layer): layer is Phaser.Tilemaps.TilemapLayer => layer !== undefined);
+
+    if (this.player?.sprite) {
+      collidableLayers.forEach(layer => {
+        this.physics.add.collider(this.player.sprite, layer);
       });
-      console.log('Interaction points:', this.interactionPoints); // Debug log
     }
   }
 
-  private initializeGameSystems(): void {
-    // Add Game Boy Color pipeline
-    const renderer = this.game.renderer as Phaser.Renderer.WebGL.WebGLRenderer;
-    if (renderer && (renderer as any).pipelines) {
-      renderer.pipelines.add('GBEffect', new GBPipeline(this.game));
-      // Initialize Game Boy Color effect
-      this.gbEffect = new GBEffect(this);
-    } else {
-      // Tenta novamente após um pequeno delay
-      this.time.delayedCall(100, () => this.initializeGameSystems());
-    }
-  }
-
-  private setupGameWorld(): void {
-    this.mapLayers = this.createOfficeMap();
-    if (!this.mapLayers) {
-      throw new Error('Failed to create map layers');
-    }
-  }
-
-  private setupPlayer(): void {
-    this.createPlayer();
-  }
-    
   private setupNPCs(): void {
-    this.createNPCs();
-  }
-
-  private setupInput(): void {
-    if (!this.input.keyboard) return;
-    
-      this.cursors = this.input.keyboard.createCursorKeys();
-    this.closeDialogKey = this.input.keyboard.addKey(Input.Keyboard.KeyCodes.ESC);
-    
-    this.closeDialogKey.on('down', () => {
-      if (this.dialogActive) {
-        this.closeAllDialogs();
-      }
-    });
-  }
-
-  update(): void {
-    if (!this.player?.sprite) return;
-
-    // Verificar se o jogador saiu pela direita
+    // Procurar pelo ponto de spawn do NPC na camada Npc_start_place
     const map = this.make.tilemap({ key: 'mapa' });
-    if (this.player.sprite.x >= map.widthInPixels) {
-      this.scene.start('VarandaScene');
-      return;
-    }
+    const npcStartLayer = map.objects.find(layer => layer.name === 'Npc_start_place');
+    let npcStartX = 0;
+    let npcStartY = 0;
 
-    if (this.dialogActive) return;
-
-    // Movimento horizontal
-    if (this.cursors.left?.isDown) {
-      this.player.sprite.setVelocityX(-100);
-    } else if (this.cursors.right?.isDown) {
-      this.player.sprite.setVelocityX(100);
-    } else {
-      this.player.sprite.setVelocityX(0);
-    }
-
-    // Movimento vertical
-    if (this.cursors.up?.isDown) {
-      this.player.sprite.setVelocityY(-100);
-    } else if (this.cursors.down?.isDown) {
-      this.player.sprite.setVelocityY(100);
-    } else {
-      this.player.sprite.setVelocityY(0);
-    }
-    
-    this.checkInteractions();
-    this.updateNPCs();
-  }
-
-  private checkInteractions(): void {
-    if (!this.input.keyboard) return;
-    
-    const spaceKey = this.input.keyboard.addKey(Input.Keyboard.KeyCodes.SPACE);
-    if (spaceKey.isDown) {
-      console.log('Space key pressed'); // Debug log
-      this.checkNPCInteractions();
-      this.checkObjectInteractions();
-      this.checkInteractionPoints();
-    }
-  }
-
-  private checkNPCInteractions(): void {
-    const playerBounds = this.player.sprite.getBounds();
-    const interactionDistance = 64; // Aumentar a distância de interação
-    
-    this.npcs.forEach((npc, id) => {
-      const npcBounds = npc.sprite.getBounds();
-      const distance = Phaser.Math.Distance.Between(
-        playerBounds.centerX,
-        playerBounds.centerY,
-        npcBounds.centerX,
-        npcBounds.centerY
-      );
-      
-      if (distance <= interactionDistance) {
-        this.showDialog(npc);
-      }
-    });
-  }
-
-  private checkObjectInteractions(): void {
-    // Implementar interação com objetos do escritório
-  }
-
-  private checkInteractionPoints(): void {
-    if (!this.interactionPoints) {
-      console.log('No interaction points found');
-      return;
-    }
-
-    const playerBounds = this.player.sprite.getBounds();
-    const interactionDistance = 24;
-
-    for (const point of this.interactionPoints) {
-      const distance = Phaser.Math.Distance.Between(
-        playerBounds.centerX,
-        playerBounds.centerY,
-        point.x,
-        point.y
-      );
-
-      console.log('Distance to interaction point:', distance);
-
-      if (distance <= interactionDistance) {
-        console.log('Showing dialog for point:', point);
-        this.showDialog({
-          sprite: this.add.sprite(0, 0, 'player'),
-          dialog: [point.dialog],
-          currentDialogIndex: 0
-        }, true); // true indica que é um pensamento do jogador
-        break;
+    if (npcStartLayer && npcStartLayer.objects.length > 0) {
+      const spawnPoint = npcStartLayer.objects[0];
+      if (typeof spawnPoint.x === 'number' && typeof spawnPoint.y === 'number') {
+        npcStartX = spawnPoint.x;
+        npcStartY = spawnPoint.y;
       }
     }
-  }
 
-  private createOfficeMap(): MapLayers | null {
-    try {
-      const floorLayer = this.add.container();
-      const wallsLayer = this.add.container();
-      const objectsLayer = this.add.container();
-
-      const tileSize = 16;
-      const map = this.office.OFFICE_LAYOUT;
-
-      // Criar um grupo de física para as paredes e objetos
-      const collisionGroup = this.physics.add.staticGroup();
-
-      for (let y = 0; y < map.length; y++) {
-        for (let x = 0; x < map[y].length; x++) {
-          const tile = map[y][x];
-          const tileX = x * tileSize;
-          const tileY = y * tileSize;
-
-          switch (tile) {
-            case 'W':
-              // Criar retângulo físico para a parede
-              const wall = this.add.rectangle(tileX + tileSize/2, tileY + tileSize/2, tileSize, tileSize, 0x000000);
-              this.physics.add.existing(wall, true); // true = static body
-              collisionGroup.add(wall);
-              wallsLayer.add(wall);
-              break;
-            case 'F':
-              floorLayer.add(this.add.image(tileX + tileSize/2, tileY + tileSize/2, 'floor'));
-              break;
-            case 'D':
-              floorLayer.add(this.add.image(tileX + tileSize/2, tileY + tileSize/2, 'floor'));
-              const desk = this.add.image(tileX + tileSize/2, tileY + tileSize/2, 'desk');
-              this.physics.add.existing(desk, true);
-              collisionGroup.add(desk);
-              objectsLayer.add(desk);
-              break;
-            case 'C':
-              floorLayer.add(this.add.image(tileX + tileSize/2, tileY + tileSize/2, 'floor'));
-              const chair = this.add.image(tileX + tileSize/2, tileY + tileSize/2, 'chair');
-              this.physics.add.existing(chair, true);
-              collisionGroup.add(chair);
-              objectsLayer.add(chair);
-              break;
-            case 'T':
-              floorLayer.add(this.add.image(tileX + tileSize/2, tileY + tileSize/2, 'floor'));
-              const terminal = this.add.image(tileX + tileSize/2, tileY + tileSize/2, 'terminal');
-              this.physics.add.existing(terminal, true);
-              collisionGroup.add(terminal);
-              objectsLayer.add(terminal);
-              break;
-            case 'E':
-              floorLayer.add(this.add.image(tileX + tileSize/2, tileY + tileSize/2, 'floor'));
-              const elevator = this.add.image(tileX + tileSize/2, tileY + tileSize/2, 'elevator');
-              this.physics.add.existing(elevator, true);
-              collisionGroup.add(elevator);
-              objectsLayer.add(elevator);
-              break;
-          }
-        }
-      }
-
-      // Adicionar colisão entre o player e todos os objetos
-      if (this.player) {
-        this.physics.add.collider(this.player.sprite, collisionGroup);
-      }
-
-      return { wallsLayer, floorLayer, objectsLayer };
-    } catch (error) {
-      console.error('Error creating office map:', error);
-      // Em vez de retornar null, vamos criar um mapa básico com paredes
-      const floorLayer = this.add.container();
-      const wallsLayer = this.add.container();
-      const objectsLayer = this.add.container();
-      const collisionGroup = this.physics.add.staticGroup();
-
-      // Criar paredes básicas
-      for (let x = 0; x < 20; x++) {
-        for (let y = 0; y < 20; y++) {
-          if (x === 0 || x === 19 || y === 0 || y === 19) {
-            const wall = this.add.rectangle(x * 16 + 8, y * 16 + 8, 16, 16, 0x000000);
-            this.physics.add.existing(wall, true);
-            collisionGroup.add(wall);
-            wallsLayer.add(wall);
-          } else {
-            floorLayer.add(this.add.image(x * 16 + 8, y * 16 + 8, 'floor'));
-          }
-        }
-      }
-
-      if (this.player) {
-        this.physics.add.collider(this.player.sprite, collisionGroup);
-      }
-
-      return { wallsLayer, floorLayer, objectsLayer };
-    }
-  }
-
-  private createPlayer(): void {
-    const startX = 2 * 16;
-    const startY = 2 * 16;
-
-    const playerSprite = this.physics.add.sprite(startX, startY, 'player');
-    
-    // Ajustar o tamanho do corpo de colisão do jogador para ficar mais próximo dos objetos
-    playerSprite.setSize(12, 12); // Reduzido de 14 para 12
-    playerSprite.setOffset(2, 2); // Ajustado de 1 para 2 para centralizar melhor
-    
-    this.player = {
-      sprite: playerSprite,
-      inventory: [],
-      stats: {
-        clearance: "Branco",
-        implants: []
-      }
-    };
-
-    // Configurar a câmera para seguir o player
-    this.cameras.main.startFollow(playerSprite);
-    this.cameras.main.setBounds(0, 0, this.office.OFFICE_LAYOUT[0].length * 16, this.office.OFFICE_LAYOUT.length * 16);
-    this.cameras.main.setZoom(2); // Aumentar o zoom para 2x
-  }
-
-  private createNPCs(): void {
     this.office.OFFICE_NPCS.forEach((npcData: NPCData) => {
       const npcSprite = this.add.sprite(
-        npcData.position.x * 16,
-        npcData.position.y * 16,
+        npcStartX,
+        npcStartY,
         npcData.id === 'exec_1' ? 'lion' : 'player'
       );
 
       this.physics.add.existing(npcSprite);
       
-      // Reduzir o tamanho da colisão do NPC
       if (npcSprite.body) {
         (npcSprite.body as Physics.Arcade.Body).setSize(8, 8);
         (npcSprite.body as Physics.Arcade.Body).setOffset(4, 4);
-      }
-      
-      // Tornar o NPC imóvel durante colisões
-      if (npcSprite.body) {
         (npcSprite.body as Physics.Arcade.Body).setImmovable(true);
       }
+      
+      npcSprite.setScale(2);
       
       if (this.mapLayers) {
         this.physics.add.collider(npcSprite, this.mapLayers.wallsLayer);
       }
 
-      // Adicionar colisão entre o jogador e o NPC
       if (this.player) {
         this.physics.add.collider(this.player.sprite, npcSprite);
       }
@@ -593,91 +331,190 @@ export default class GameScene extends Scene {
     });
   }
 
+  private setupInteractions(map: Phaser.Tilemaps.Tilemap): void {
+    const interactionLayer = map.getObjectLayer('JBL');
+    if (interactionLayer) {
+      this.interactionPoints = interactionLayer.objects.map(obj => ({
+        x: obj.x || 0,
+        y: obj.y || 0,
+        dialog: obj.properties?.find((p: { name: string; value: string }) => p.name === 'interaction')?.value === 'JBL' 
+          ? 'Caraca essa JBL depois do overclock ficou bem forte potente'
+          : obj.properties?.find((p: { name: string; value: string }) => p.name === 'interaction')?.value || ''
+      }));
+    }
+  }
+
+  update(): void {
+    if (!this.player?.sprite) return;
+
+    // Verificar se o jogador saiu pela direita
+    const map = this.make.tilemap({ key: 'mapa' });
+    if (this.player.sprite.x >= map.widthInPixels) {
+      this.scene.start('VarandaScene');
+      return;
+    }
+
+    this.handleMovement();
+    this.checkInteractions();
+    this.updateNPCs();
+  }
+
+  protected handleMovement(): void {
+    if (!this.player?.sprite || !this.cursors || this.dialogActive) return;
+
+    const speed = 160;
+    let velocityX = 0;
+    let velocityY = 0;
+
+    if (this.cursors.left?.isDown) {
+      velocityX = -speed;
+      this.player.sprite.setFlipX(true);
+    } else if (this.cursors.right?.isDown) {
+      velocityX = speed;
+      this.player.sprite.setFlipX(false);
+    }
+
+    if (this.cursors.up?.isDown) {
+      velocityY = -speed;
+    } else if (this.cursors.down?.isDown) {
+      velocityY = speed;
+    }
+
+    // Normalize diagonal movement
+    if (velocityX !== 0 && velocityY !== 0) {
+      velocityX *= Math.SQRT1_2;
+      velocityY *= Math.SQRT1_2;
+    }
+
+    this.player.sprite.setVelocity(velocityX, velocityY);
+
+    // Update animation
+    if (velocityX !== 0 || velocityY !== 0) {
+      this.player.sprite.anims.play('walk', true);
+    } else {
+      this.player.sprite.anims.play('idle', true);
+    }
+  }
+
+  protected checkInteractions(): void {
+    if (!this.player?.sprite || this.dialogActive) return;
+
+    const interactionDistance = 32;
+    const spaceKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+    // Only check interactions if space key is pressed
+    if (spaceKey?.isDown) {
+      // Check NPC interactions
+      this.npcs.forEach(npc => {
+        if (!npc.sprite) return;
+
+        const distance = Phaser.Math.Distance.Between(
+          this.player.sprite.x,
+          this.player.sprite.y,
+          npc.sprite.x,
+          npc.sprite.y
+        );
+
+        if (distance <= interactionDistance) {
+          this.showNPCDialog(npc);
+        }
+      });
+
+      // Check interaction points
+      this.interactionPoints?.forEach(point => {
+        const distance = Phaser.Math.Distance.Between(
+          this.player.sprite.x,
+          this.player.sprite.y,
+          point.x,
+          point.y
+        );
+
+        if (distance <= interactionDistance) {
+          console.log('Showing dialog for point:', point);
+          this.showNPCDialog({
+            sprite: this.add.sprite(0, 0, 'player'),
+            dialog: [point.dialog],
+            currentDialogIndex: 0
+          });
+        }
+      });
+    }
+  }
+
   private updateNPCs(): void {
     this.npcs.forEach(npc => {
-      // Dr. Lion não se move
-      if (npc.sprite.texture.key === 'lion') {
-        return;
-      }
+      if (npc.sprite.texture.key === 'lion') return;
 
       if (!npc.patrolPoints) {
-        // Definir pontos de patrulha para o NPC
         const tileSize = 16;
         npc.patrolPoints = [
-          {x: 4 * tileSize, y: 5 * tileSize}, // Posição inicial
-          {x: 8 * tileSize, y: 5 * tileSize}, // Ponto de patrulha 1
-          {x: 8 * tileSize, y: 3 * tileSize}, // Ponto de patrulha 2
-          {x: 4 * tileSize, y: 3 * tileSize}  // Ponto de patrulha 3
+          {x: 4 * tileSize, y: 5 * tileSize},
+          {x: 8 * tileSize, y: 5 * tileSize},
+          {x: 8 * tileSize, y: 3 * tileSize},
+          {x: 4 * tileSize, y: 3 * tileSize}
         ];
         npc.currentPatrolIndex = 0;
         npc.isMoving = false;
       }
 
       if (!npc.isMoving) {
-        // Avançar para o próximo ponto de patrulha
-        npc.currentPatrolIndex = (npc.currentPatrolIndex! + 1) % npc.patrolPoints.length;
-        const target = npc.patrolPoints[npc.currentPatrolIndex!];
-
-        // Primeiro move horizontalmente, depois verticalmente
-        const moveHorizontally = () => {
-          if (target.x !== npc.sprite.x) {
-            try {
-              this.tweens.add({
-                targets: npc.sprite,
-                x: target.x,
-                duration: 1000,
-                ease: 'Linear',
-                onStart: () => {
-                  npc.isMoving = true;
-                  // Virar o sprite na direção do movimento
-                  npc.sprite.setFlipX(target.x < npc.sprite.x);
-                },
-                onComplete: () => {
-                  if (this.scene.isActive()) {
-                    moveVertically();
-                  }
-                }
-              });
-            } catch (error) {
-              console.warn('Erro ao criar tween horizontal:', error);
-              npc.isMoving = false;
-            }
-          } else {
-            moveVertically();
-          }
-        };
-
-        const moveVertically = () => {
-          if (target.y !== npc.sprite.y) {
-            try {
-              this.tweens.add({
-                targets: npc.sprite,
-                y: target.y,
-                duration: 1000,
-                ease: 'Linear',
-                onComplete: () => {
-                  if (this.scene.isActive()) {
-                    npc.isMoving = false;
-                  }
-                }
-              });
-            } catch (error) {
-              console.warn('Erro ao criar tween vertical:', error);
-              npc.isMoving = false;
-            }
-          } else {
-            npc.isMoving = false;
-          }
-        };
-
-        if (this.scene.isActive()) {
-          moveHorizontally();
-        }
+        this.moveNPC(npc);
       }
     });
   }
+
+  private moveNPC(npc: NPC): void {
+    if (!npc.patrolPoints || npc.currentPatrolIndex === undefined) return;
+
+    npc.currentPatrolIndex = (npc.currentPatrolIndex + 1) % npc.patrolPoints.length;
+    const target = npc.patrolPoints[npc.currentPatrolIndex];
+
+    const moveHorizontally = () => {
+      if (target.x !== npc.sprite.x) {
+        this.tweens.add({
+          targets: npc.sprite,
+          x: target.x,
+          duration: 1000,
+          ease: 'Linear',
+          onStart: () => {
+            npc.isMoving = true;
+            npc.sprite.setFlipX(target.x < npc.sprite.x);
+          },
+          onComplete: () => {
+            if (this.scene.isActive()) {
+              moveVertically();
+            }
+          }
+        });
+      } else {
+        moveVertically();
+      }
+    };
+
+    const moveVertically = () => {
+      if (target.y !== npc.sprite.y) {
+        this.tweens.add({
+          targets: npc.sprite,
+          y: target.y,
+          duration: 1000,
+          ease: 'Linear',
+          onComplete: () => {
+            if (this.scene.isActive()) {
+              npc.isMoving = false;
+            }
+          }
+        });
+      } else {
+        npc.isMoving = false;
+      }
+    };
+
+    if (this.scene.isActive()) {
+      moveHorizontally();
+    }
+  }
   
-  private showDialog(npc: NPC, isPlayerThought: boolean = false): void {
+  protected showNPCDialog(npc: NPC, isPlayerThought: boolean = false): void {
     if (this.dialogActive) return;
 
     this.dialogActive = true;

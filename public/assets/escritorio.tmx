@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.1" orientation="orthogonal" renderorder="right-down" width="40" height="25" tilewidth="16" tileheight="16" infinite="0" nextlayerid="12" nextobjectid="5">
- <editorsettings>
-  <export format="tmx"/>
- </editorsettings>
+<map version="1.10" tiledversion="1.11.1" orientation="orthogonal" renderorder="right-down" width="40" height="25" tilewidth="16" tileheight="16" infinite="0" nextlayerid="14" nextobjectid="7">
  <tileset firstgid="1" name="Interior general" tilewidth="16" tileheight="16" tilecount="8032" columns="16">
   <image source="Interior general.png" width="256" height="8032"/>
  </tileset>
+ <tileset firstgid="8033" source=":/automap-tiles.tsx"/>
+ <tileset firstgid="8038" source="Interior general.tsx"/>
  <layer id="1" name="ground" width="40" height="25">
   <data encoding="csv">
 102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,102,
@@ -185,6 +184,16 @@
  </layer>
  <objectgroup id="11" name="JBL">
   <object id="4" x="544" y="126">
+   <point/>
+  </object>
+ </objectgroup>
+ <objectgroup id="12" name="Npc_start_place">
+  <object id="5" x="386.695" y="216.926">
+   <point/>
+  </object>
+ </objectgroup>
+ <objectgroup id="13" name="Char_start_place">
+  <object id="6" x="451.368" y="289.684">
    <point/>
   </object>
  </objectgroup>

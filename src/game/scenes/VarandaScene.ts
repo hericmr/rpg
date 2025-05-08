@@ -2,21 +2,22 @@ import { Scene, GameObjects, Physics, Input } from 'phaser';
 import { GBPipeline } from '../effects/GBPipeline';
 import { GBEffect } from '../effects/GBEffect';
 import { DialogBox } from '../components/DialogBox';
+import { BaseScene, Player } from './BaseScene';
 
-export default class VarandaScene extends Scene {
-  private player!: Physics.Arcade.Sprite;
-  private cursors: {
+export default class VarandaScene extends BaseScene {
+  protected player!: Player;
+  protected cursors: {
     left?: Phaser.Input.Keyboard.Key;
     right?: Phaser.Input.Keyboard.Key;
     up?: Phaser.Input.Keyboard.Key;
     down?: Phaser.Input.Keyboard.Key;
     shift?: Phaser.Input.Keyboard.Key;
   } = {};
-  private readonly NORMAL_SPEED = 100;
-  private readonly SPRINT_SPEED = 200;
-  private dialogActive: boolean = false;
-  private interactionPoints?: { x: number; y: number; dialog: string }[];
-  private currentDialog?: DialogBox;
+  protected readonly NORMAL_SPEED = 100;
+  protected readonly SPRINT_SPEED = 200;
+  protected dialogActive: boolean = false;
+  protected interactionPoints?: { x: number; y: number; dialog: string }[];
+  protected currentDialog?: DialogBox;
 
   constructor() {
     super({ key: 'VarandaScene' });
@@ -31,7 +32,6 @@ export default class VarandaScene extends Scene {
     this.load.image('Interior general', `${publicUrl}/assets/Interior general.png`);
     console.log('Tentando carregar spritesheet do player:', `${publicUrl}/assets/heric2.png`);
     this.load.spritesheet('player', `${publicUrl}/assets/heric2.png`, { frameWidth: 16, frameHeight: 16 });
-    // Carregar o retrato do jogador
     this.load.image('player_portrait', `${publicUrl}/assets/heric2.png`);
   }
 
@@ -59,37 +59,65 @@ export default class VarandaScene extends Scene {
     // Criar as camadas
     console.log('Criando camadas...');
     const groundLayer = map.createLayer('ground', tileset);
-    console.log('Camada ground criada:', groundLayer);
     const wallsLayer = map.createLayer('walls', tileset);
-    console.log('Camada walls criada:', wallsLayer);
     const objetosLayer = map.createLayer('objetos', tileset);
-    console.log('Camada objetos criada:', objetosLayer);
     const plantasLayer = map.createLayer('plantas', tileset);
-    console.log('Camada plantas criada:', plantasLayer);
 
     if (!groundLayer || !wallsLayer || !objetosLayer || !plantasLayer) {
-      console.error('Erro ao criar camadas do mapa:', {
-        ground: !!groundLayer,
-        walls: !!wallsLayer,
-        objetos: !!objetosLayer,
-        plantas: !!plantasLayer
-      });
+      console.error('Erro ao criar camadas do mapa');
       return;
     }
 
-    // Criar o jogador na posição inicial (lado esquerdo do mapa)
-    console.log('Criando jogador...');
-    this.player = this.physics.add.sprite(32, map.heightInPixels / 2, 'player');
-    console.log('Jogador criado:', this.player);
+    // Criar o jogador na posição inicial
+    this.setupPlayer(32, map.heightInPixels / 2);
     
-    // Configurar o jogador
-    this.player.setScale(2);
-    this.player.setSize(12, 12);
-    this.player.setOffset(2, 2);
-    this.player.setCollideWorldBounds(false);
-    this.player.setDepth(1);
+    // Configurar a câmera
+    this.setupCamera(map.widthInPixels, map.heightInPixels);
     
-    // Adicionar animações do jogador
+    // Configurar colisões
+    this.setupCollisions([wallsLayer, objetosLayer, plantasLayer]);
+    
+    // Configurar interações
+    this.setupInteractions(map);
+    
+    // Configurar controles
+    this.setupInput();
+    
+    // Configurar animações
+    this.setupAnimations();
+    
+    console.log('Cena criada com sucesso!');
+  }
+
+  private setupCollisions(layers: Phaser.Tilemaps.TilemapLayer[]): void {
+    layers.forEach(layer => {
+      if (layer) {
+        const layerHasCollision = layer.layer.properties?.some(
+          (prop: any) => prop.name === 'collides' && prop.value === true
+        );
+        if (layerHasCollision) {
+          layer.setCollisionBetween(0, 9999, true);
+          this.physics.add.collider(this.player.sprite, layer);
+        } else {
+          layer.setCollisionByProperty({ collides: true });
+          this.physics.add.collider(this.player.sprite, layer);
+        }
+      }
+    });
+  }
+
+  private setupInteractions(map: Phaser.Tilemaps.Tilemap): void {
+    const interactionLayer = map.getObjectLayer('interactions');
+    if (interactionLayer) {
+      this.interactionPoints = interactionLayer.objects.map(obj => ({
+        x: obj.x || 0,
+        y: obj.y || 0,
+        dialog: obj.properties?.find((p: { name: string; value: string }) => p.name === 'dialog')?.value || ''
+      }));
+    }
+  }
+
+  private setupAnimations(): void {
     this.anims.create({
       key: 'left',
       frames: this.anims.generateFrameNumbers('player', { start: 0, end: 3 }),
@@ -110,102 +138,77 @@ export default class VarandaScene extends Scene {
       frameRate: 10,
       repeat: -1
     });
+  }
 
-    // Configurar a câmera
-    console.log('Configurando câmera...');
-    this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
-    this.cameras.main.startFollow(this.player);
-    this.cameras.main.setZoom(1); // Aumentando o zoom para 4x
-    this.cameras.main.setRoundPixels(true);
+  protected setupPlayer(x: number, y: number): void {
+    const sprite = this.physics.add.sprite(x, y, 'player');
+    sprite.setSize(12, 12);
+    sprite.setOffset(2, 2);
+    sprite.setScale(2);
 
-    // Configurar colisões para todas as camadas
-    console.log('Configurando colisões...');
-    const collidableLayers = [wallsLayer, objetosLayer, plantasLayer];
-    collidableLayers.forEach(layer => {
-      if (layer) {
-        // Verifica se a camada tem a propriedade collides: true
-        const layerHasCollision = layer.layer.properties?.some(
-          (prop: any) => prop.name === 'collides' && prop.value === true
-        );
-        if (layerHasCollision) {
-          // Ativa colisão para todos os tiles da camada
-          layer.setCollisionBetween(0, 9999, true);
-          this.physics.add.collider(this.player, layer);
-          console.log(`Colisão ativada para a camada ${layer.layer.name} por propriedade da camada.`);
-        } else {
-          // Mantém a colisão por propriedade de tile também
-          layer.setCollisionByProperty({ collides: true });
-          this.physics.add.collider(this.player, layer);
-        }
+    this.player = {
+      sprite,
+      inventory: [],
+      stats: {
+        clearance: "Branco",
+        implants: []
       }
-    });
-    
-    // Carregar a camada de interação
-    const interactionLayer = map.getObjectLayer('interactions');
-    console.log('Interaction layer:', interactionLayer);
-    
-    if (interactionLayer) {
-      this.interactionPoints = interactionLayer.objects.map(obj => {
-        console.log('Interaction object:', obj);
-        return {
-          x: obj.x || 0,
-          y: obj.y || 0,
-          dialog: obj.properties?.find((p: { name: string; value: string }) => p.name === 'dialog')?.value || ''
-        };
-      });
-      console.log('Interaction points:', this.interactionPoints);
-    }
-
-    // Configurar controles
-    console.log('Configurando controles...');
-    if (this.input.keyboard) {
-      this.cursors = this.input.keyboard.addKeys({
-        left: Input.Keyboard.KeyCodes.LEFT,
-        right: Input.Keyboard.KeyCodes.RIGHT,
-        up: Input.Keyboard.KeyCodes.UP,
-        down: Input.Keyboard.KeyCodes.DOWN,
-        shift: Input.Keyboard.KeyCodes.SHIFT
-      });
-    }
-    
-    console.log('Cena criada com sucesso!');
+    };
   }
 
   update(): void {
     if (!this.player) return;
 
-    if (this.dialogActive) return;
-
-    // Movimento horizontal
-    if (this.cursors.left?.isDown) {
-      this.player.setVelocityX(-100);
-    } else if (this.cursors.right?.isDown) {
-      this.player.setVelocityX(100);
-    } else {
-      this.player.setVelocityX(0);
-    }
-
-    // Movimento vertical
-    if (this.cursors.up?.isDown) {
-      this.player.setVelocityY(-100);
-    } else if (this.cursors.down?.isDown) {
-      this.player.setVelocityY(100);
-    } else {
-      this.player.setVelocityY(0);
-    }
-
-    // Verificar interações
-    this.checkInteractions();
-
     // Verificar se o jogador saiu pela esquerda
-    if (this.player.x <= -16) {
+    if (this.player.sprite.x <= -16) {
       console.log('Jogador saiu pela esquerda, voltando para GameScene...');
-      this.player.setVelocity(0, 0);
+      this.player.sprite.setVelocity(0, 0);
       this.scene.start('GameScene', { fromRight: true });
+      return;
+    }
+
+    this.handleMovement();
+    this.checkInteractions();
+  }
+
+  protected handleMovement(): void {
+    if (!this.player?.sprite || this.dialogActive) return;
+
+    const speed = this.cursors.shift?.isDown ? this.SPRINT_SPEED : this.NORMAL_SPEED;
+    let velocityX = 0;
+    let velocityY = 0;
+
+    if (this.cursors.left?.isDown) {
+      velocityX = -speed;
+      this.player.sprite.setFlipX(true);
+    } else if (this.cursors.right?.isDown) {
+      velocityX = speed;
+      this.player.sprite.setFlipX(false);
+    }
+
+    if (this.cursors.up?.isDown) {
+      velocityY = -speed;
+    } else if (this.cursors.down?.isDown) {
+      velocityY = speed;
+    }
+
+    // Normalize diagonal movement
+    if (velocityX !== 0 && velocityY !== 0) {
+      velocityX *= Math.SQRT1_2;
+      velocityY *= Math.SQRT1_2;
+    }
+
+    this.player.sprite.setVelocity(velocityX, velocityY);
+
+    // Update animation
+    if (velocityX !== 0 || velocityY !== 0) {
+      this.player.sprite.anims.play('walk', true);
+    } else {
+      this.player.sprite.anims.play('idle', true);
     }
   }
 
-  private checkInteractions(): void {
+  protected checkInteractions(): void {
     if (!this.input.keyboard || !this.interactionPoints) return;
     
     const spaceKey = this.input.keyboard.addKey(Input.Keyboard.KeyCodes.SPACE);
@@ -215,13 +218,13 @@ export default class VarandaScene extends Scene {
     }
   }
 
-  private checkInteractionPoints(): void {
-    if (!this.interactionPoints) {
+  protected checkInteractionPoints(): void {
+    if (!this.interactionPoints || !this.player?.sprite) {
       console.log('No interaction points found');
       return;
     }
 
-    const playerBounds = this.player.getBounds();
+    const playerBounds = this.player.sprite.getBounds();
     const interactionDistance = 50;
 
     for (const point of this.interactionPoints) {
@@ -242,9 +245,9 @@ export default class VarandaScene extends Scene {
     }
   }
 
-  private showDialog(dialog: string): void {
+  protected showDialog(dialog: string): void {
     this.dialogActive = true;
-    this.player.setVelocity(0, 0);
+    this.player.sprite.setVelocity(0, 0);
 
     const screenWidth = this.cameras.main.width;
     const screenHeight = this.cameras.main.height;
@@ -259,7 +262,7 @@ export default class VarandaScene extends Scene {
       height: screenHeight * 0.3,
       dialog: dialog,
       portrait: 'player_portrait',
-      name: 'Você',
+      name: dialog,
       dialogColor: 0x1a237e,
       textColor: '#FFFFFF',
       onClose: () => {
