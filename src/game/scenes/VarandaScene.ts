@@ -1,6 +1,7 @@
 import { Scene, GameObjects, Physics, Input } from 'phaser';
 import { GBPipeline } from '../effects/GBPipeline';
 import { GBEffect } from '../effects/GBEffect';
+import { DialogBox } from '../components/DialogBox';
 
 export default class VarandaScene extends Scene {
   private player!: Physics.Arcade.Sprite;
@@ -13,6 +14,9 @@ export default class VarandaScene extends Scene {
   } = {};
   private readonly NORMAL_SPEED = 100;
   private readonly SPRINT_SPEED = 200;
+  private dialogActive: boolean = false;
+  private interactionPoints?: { x: number; y: number; dialog: string }[];
+  private currentDialog?: DialogBox;
 
   constructor() {
     super({ key: 'VarandaScene' });
@@ -27,6 +31,8 @@ export default class VarandaScene extends Scene {
     this.load.image('Interior general', `${publicUrl}/assets/Interior general.png`);
     console.log('Tentando carregar spritesheet do player:', `${publicUrl}/assets/heric2.png`);
     this.load.spritesheet('player', `${publicUrl}/assets/heric2.png`, { frameWidth: 16, frameHeight: 16 });
+    // Carregar o retrato do jogador
+    this.load.image('player_portrait', `${publicUrl}/assets/heric2.png`);
   }
 
   create(): void {
@@ -58,20 +64,18 @@ export default class VarandaScene extends Scene {
     console.log('Camada walls criada:', wallsLayer);
     const objetosLayer = map.createLayer('objetos', tileset);
     console.log('Camada objetos criada:', objetosLayer);
+    const plantasLayer = map.createLayer('plantas', tileset);
+    console.log('Camada plantas criada:', plantasLayer);
 
-    if (!groundLayer || !wallsLayer || !objetosLayer) {
+    if (!groundLayer || !wallsLayer || !objetosLayer || !plantasLayer) {
       console.error('Erro ao criar camadas do mapa:', {
         ground: !!groundLayer,
         walls: !!wallsLayer,
-        objetos: !!objetosLayer
+        objetos: !!objetosLayer,
+        plantas: !!plantasLayer
       });
       return;
     }
-
-    // Configurar colisões
-    console.log('Configurando colisões...');
-    wallsLayer.setCollisionBetween(0, 1000, true);
-    objetosLayer.setCollisionBetween(0, 1000, true);
 
     // Criar o jogador na posição inicial (lado esquerdo do mapa)
     console.log('Criando jogador...');
@@ -80,9 +84,9 @@ export default class VarandaScene extends Scene {
     
     // Configurar o jogador
     this.player.setScale(2);
-    this.player.setSize(24, 24);
-    this.player.setOffset(4, 4);
-    this.player.setCollideWorldBounds(false); // Permitir que o jogador saia dos limites do mapa
+    this.player.setSize(12, 12);
+    this.player.setOffset(2, 2);
+    this.player.setCollideWorldBounds(false);
     this.player.setDepth(1);
     
     // Adicionar animações do jogador
@@ -114,6 +118,44 @@ export default class VarandaScene extends Scene {
     this.cameras.main.setZoom(1); // Aumentando o zoom para 4x
     this.cameras.main.setRoundPixels(true);
 
+    // Configurar colisões para todas as camadas
+    console.log('Configurando colisões...');
+    const collidableLayers = [wallsLayer, objetosLayer, plantasLayer];
+    collidableLayers.forEach(layer => {
+      if (layer) {
+        // Verifica se a camada tem a propriedade collides: true
+        const layerHasCollision = layer.layer.properties?.some(
+          (prop: any) => prop.name === 'collides' && prop.value === true
+        );
+        if (layerHasCollision) {
+          // Ativa colisão para todos os tiles da camada
+          layer.setCollisionBetween(0, 9999, true);
+          this.physics.add.collider(this.player, layer);
+          console.log(`Colisão ativada para a camada ${layer.layer.name} por propriedade da camada.`);
+        } else {
+          // Mantém a colisão por propriedade de tile também
+          layer.setCollisionByProperty({ collides: true });
+          this.physics.add.collider(this.player, layer);
+        }
+      }
+    });
+    
+    // Carregar a camada de interação
+    const interactionLayer = map.getObjectLayer('interactions');
+    console.log('Interaction layer:', interactionLayer);
+    
+    if (interactionLayer) {
+      this.interactionPoints = interactionLayer.objects.map(obj => {
+        console.log('Interaction object:', obj);
+        return {
+          x: obj.x || 0,
+          y: obj.y || 0,
+          dialog: obj.properties?.find((p: { name: string; value: string }) => p.name === 'dialog')?.value || ''
+        };
+      });
+      console.log('Interaction points:', this.interactionPoints);
+    }
+
     // Configurar controles
     console.log('Configurando controles...');
     if (this.input.keyboard) {
@@ -125,11 +167,6 @@ export default class VarandaScene extends Scene {
         shift: Input.Keyboard.KeyCodes.SHIFT
       });
     }
-
-    // Configurar colisões
-    console.log('Configurando colisões do jogador...');
-    this.physics.add.collider(this.player, wallsLayer);
-    this.physics.add.collider(this.player, objetosLayer);
     
     console.log('Cena criada com sucesso!');
   }
@@ -137,31 +174,111 @@ export default class VarandaScene extends Scene {
   update(): void {
     if (!this.player) return;
 
-    const currentSpeed = this.cursors.shift?.isDown ? this.SPRINT_SPEED : this.NORMAL_SPEED;
+    if (this.dialogActive) return;
 
     // Movimento horizontal
     if (this.cursors.left?.isDown) {
-      this.player.setVelocityX(-currentSpeed);
+      this.player.setVelocityX(-100);
     } else if (this.cursors.right?.isDown) {
-      this.player.setVelocityX(currentSpeed);
+      this.player.setVelocityX(100);
     } else {
       this.player.setVelocityX(0);
     }
 
     // Movimento vertical
     if (this.cursors.up?.isDown) {
-      this.player.setVelocityY(-currentSpeed);
+      this.player.setVelocityY(-100);
     } else if (this.cursors.down?.isDown) {
-      this.player.setVelocityY(currentSpeed);
+      this.player.setVelocityY(100);
     } else {
       this.player.setVelocityY(0);
     }
 
+    // Verificar interações
+    this.checkInteractions();
+
     // Verificar se o jogador saiu pela esquerda
-    if (this.player.x <= -16) { // Aumentando a área de detecção
+    if (this.player.x <= -16) {
       console.log('Jogador saiu pela esquerda, voltando para GameScene...');
       this.player.setVelocity(0, 0);
       this.scene.start('GameScene', { fromRight: true });
     }
+  }
+
+  private checkInteractions(): void {
+    if (!this.input.keyboard || !this.interactionPoints) return;
+    
+    const spaceKey = this.input.keyboard.addKey(Input.Keyboard.KeyCodes.SPACE);
+    if (spaceKey.isDown) {
+      console.log('Space key pressed');
+      this.checkInteractionPoints();
+    }
+  }
+
+  private checkInteractionPoints(): void {
+    if (!this.interactionPoints) {
+      console.log('No interaction points found');
+      return;
+    }
+
+    const playerBounds = this.player.getBounds();
+    const interactionDistance = 50;
+
+    for (const point of this.interactionPoints) {
+      const distance = Phaser.Math.Distance.Between(
+        playerBounds.centerX,
+        playerBounds.centerY,
+        point.x,
+        point.y
+      );
+
+      console.log('Distance to interaction point:', distance);
+
+      if (distance <= interactionDistance) {
+        console.log('Showing dialog for point:', point);
+        this.showDialog(point.dialog);
+        break;
+      }
+    }
+  }
+
+  private showDialog(dialog: string): void {
+    this.dialogActive = true;
+    this.player.setVelocity(0, 0);
+
+    const screenWidth = this.cameras.main.width;
+    const screenHeight = this.cameras.main.height;
+    const x = screenWidth / 2;
+    const y = screenHeight - (screenHeight * 0.15);
+
+    this.currentDialog = new DialogBox({
+      scene: this,
+      x: x,
+      y: y,
+      width: screenWidth * 0.9,
+      height: screenHeight * 0.3,
+      dialog: dialog,
+      portrait: 'player_portrait',
+      name: 'Você',
+      dialogColor: 0x1a237e,
+      textColor: '#FFFFFF',
+      onClose: () => {
+        this.dialogActive = false;
+      }
+    });
+  }
+
+  private closeDialog(
+    background: GameObjects.Rectangle,
+    text: GameObjects.Text,
+    innerBorder: GameObjects.Rectangle,
+    outerBorder: GameObjects.Rectangle,
+    nameText: GameObjects.Text
+  ): void {
+    if (this.currentDialog) {
+      this.currentDialog.close();
+      this.currentDialog = undefined;
+    }
+    this.dialogActive = false;
   }
 } 

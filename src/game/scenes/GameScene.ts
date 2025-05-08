@@ -27,7 +27,7 @@ interface NPC {
     border: GameObjects.Rectangle;
     innerBorder: GameObjects.Rectangle;
     outerBorder: GameObjects.Rectangle;
-    faceImage: GameObjects.Image;
+    faceImage?: GameObjects.Image;
     nameText: GameObjects.Text;
     timer?: Phaser.Time.TimerEvent;
   };
@@ -419,15 +419,15 @@ export default class GameScene extends Scene {
         point.y
       );
 
-      console.log('Distance to interaction point:', distance); // Debug log
+      console.log('Distance to interaction point:', distance);
 
       if (distance <= interactionDistance) {
-        console.log('Showing dialog for point:', point); // Debug log
+        console.log('Showing dialog for point:', point);
         this.showDialog({
           sprite: this.add.sprite(0, 0, 'player'),
           dialog: [point.dialog],
           currentDialogIndex: 0
-        });
+        }, true); // true indica que é um pensamento do jogador
         break;
       }
     }
@@ -677,7 +677,7 @@ export default class GameScene extends Scene {
     });
   }
   
-  private showDialog(npc: NPC): void {
+  private showDialog(npc: NPC, isPlayerThought: boolean = false): void {
     if (this.dialogActive) return;
 
     this.dialogActive = true;
@@ -687,13 +687,20 @@ export default class GameScene extends Scene {
     const screenWidth = this.cameras.main.width;
     const screenHeight = this.cameras.main.height;
     const x = screenWidth / 2;
-    const y = screenHeight * 0.7;
+    const y = screenHeight - (screenHeight * 0.15);
 
-    // Criar a imagem do rosto por trás
-    const faceImage = this.add.image(x - screenWidth/4, y - screenHeight/2, 'lionface');
-    faceImage.setScrollFactor(0);
-    faceImage.setScale(0.5);
-    faceImage.setDepth(0);
+    // Definir cores baseado no tipo de diálogo
+    const dialogColor = isPlayerThought ? 0x1a237e : 0xe43675; // Azul marinho para pensamentos, rosa para NPCs
+    const textColor = '#FFFFFF'; // Texto branco para ambos os casos
+
+    // Criar a imagem do rosto por trás (apenas para NPCs)
+    let faceImage: GameObjects.Image | undefined;
+    if (!isPlayerThought) {
+      faceImage = this.add.image(x - screenWidth/4, y - screenHeight/4, 'lionface');
+      faceImage.setScrollFactor(0);
+      faceImage.setScale(0.3);
+      faceImage.setDepth(0);
+    }
 
     // Criar borda externa (branca)
     const outerBorder = this.add.rectangle(x, y, screenWidth * 0.9, screenHeight * 0.3, 0xFFFFFF);
@@ -705,8 +712,8 @@ export default class GameScene extends Scene {
     innerBorder.setScrollFactor(0);
     innerBorder.setDepth(1);
     
-    // Criar fundo branco para o texto
-    const background = this.add.rectangle(x, y, screenWidth * 0.9 - 8, screenHeight * 0.3 - 8, 0xe43675);
+    // Criar fundo colorido para o texto
+    const background = this.add.rectangle(x, y, screenWidth * 0.9 - 8, screenHeight * 0.3 - 8, dialogColor);
     background.setScrollFactor(0);
     background.setDepth(1);
 
@@ -714,18 +721,18 @@ export default class GameScene extends Scene {
     const text = this.add.text(x, y, dialogText, {
       fontSize: '12px',
       fontFamily: 'monospace',
-      color: '#000000',
+      color: textColor,
       wordWrap: { width: screenWidth * 0.8 }
     });
     text.setOrigin(0.5);
     text.setScrollFactor(0);
     text.setDepth(2);
 
-    // Criar o nome do NPC
-    const nameText = this.add.text(x - screenWidth * 0.4, y - screenHeight * 0.12, 'DR. Lion', {
+    // Criar o nome do NPC ou "Você" para pensamentos
+    const nameText = this.add.text(x - screenWidth * 0.4, y - screenHeight * 0.12, isPlayerThought ? 'Você' : 'DR. Lion', {
       fontSize: '15px',
       fontFamily: 'monospace',
-      color: '#000000'
+      color: textColor
     });
     nameText.setOrigin(0.5);
     nameText.setScrollFactor(0);
@@ -771,7 +778,7 @@ export default class GameScene extends Scene {
       npc.dialogBox.border.destroy();
       npc.dialogBox.innerBorder.destroy();
       npc.dialogBox.outerBorder.destroy();
-      npc.dialogBox.faceImage.destroy();
+      npc.dialogBox.faceImage?.destroy();
       npc.dialogBox.nameText.destroy();
       npc.dialogBox = undefined;
     }
