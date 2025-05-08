@@ -75,8 +75,8 @@ export default class BootScene extends Scene {
 
         this.copyrightText = this.add.text(
             this.cameras.main.width / 2,
-            this.cameras.main.height - 65,
-            '© 2099 GM Lion Indie Games\nTODOS OS DIREITOS RESERVADOS',
+            this.cameras.main.height - 55,
+            'Papai Lion\nIndie Games\n\nTODOS OS DIREITOS RESERVADOS',
             {
                 fontFamily: 'monospace',
                 fontSize: '8px',
