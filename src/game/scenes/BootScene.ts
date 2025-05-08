@@ -4,78 +4,105 @@ export default class BootScene extends Scene {
     private morphingSprite!: GameObjects.Sprite;
     private copyrightText!: GameObjects.Text;
 
+    private readonly FPS = 24;
+    private readonly FRAME_HOLD = 3 * this.FPS;
+    private readonly publicUrl = process.env.PUBLIC_URL || '';
+
     constructor() {
         super({ key: 'BootScene' });
     }
 
     preload(): void {
-        const publicUrl = process.env.PUBLIC_URL || '';
-        this.load.image('menu', `${publicUrl}/assets/menu.png`);
-        this.load.audio('msc', `${publicUrl}/assets/eletronic.ogg`);
-        
-        // Carregar a sequência de frames
-        for (let i = 0; i <= 49; i++) {
-            const frameNumber = i.toString().padStart(3, '0');
-            this.load.image(`frame_${frameNumber}`, `${publicUrl}/assets/frames/frame_${frameNumber}.png`);
-        }
+        this.load.image('menu', `${this.publicUrl}/assets/menu.png`);
+        this.load.audio('msc', `${this.publicUrl}/assets/eletronic.ogg`);
+
+        this.loadFrameSequence(0, 49);
     }
 
     create(): void {
-        // Configurar fundo preto
-        this.cameras.main.setBackgroundColor('#000000');
+        this.cameras.main.setBackgroundColor('#000');
+        this.cameras.main.fadeIn(1000, 0, 0, 0);
 
-        // Criar sprite do morphing
+        this.sound.play('msc', { volume: 0.2, loop: true });
+
+        this.createMorphingSprite();
+        this.createAnimations();
+        this.createCopyrightText();
+
+        this.playIntroSequence();
+    }
+
+    private loadFrameSequence(start: number, end: number): void {
+        for (let i = start; i <= end; i++) {
+            const frame = i.toString().padStart(3, '0');
+            this.load.image(`frame_${frame}`, `${this.publicUrl}/assets/frames/frame_${frame}.png`);
+        }
+    }
+
+    private createMorphingSprite(): void {
         this.morphingSprite = this.add.sprite(
-            this.cameras.main.width / 2,
-            this.cameras.main.height / 2,
+            this.scale.width / 2,
+            this.scale.height / 2,
             'frame_000'
         );
         this.morphingSprite.setAlpha(0);
         this.morphingSprite.setScale(0.3);
+    }
 
-        // Criar animação do morphing
-        const frameNames = [];
-        // Primeiro frame (3 segundos, só uma vez)
-        for (let i = 0; i < 72; i++) { // 3 segundos * 24fps = 72 frames
-            frameNames.push({ key: 'frame_000' });
-        }
-        // Frames intermediários (velocidade normal)
-        for (let i = 1; i <= 48; i++) {
-            const frameNumber = i.toString().padStart(3, '0');
-            frameNames.push({ key: `frame_${frameNumber}` });
-        }
-        // Último frame (3 segundos)
-        for (let i = 0; i < 172; i++) { // 3 segundos * 24fps = 72 frames
-            frameNames.push({ key: 'frame_049' });
-        }
-
+    private createAnimations(): void {
         this.anims.create({
             key: 'morph',
-            frames: frameNames,
-            frameRate: 24,
-            repeat: 0 // Não repetir a animação
+            frames: [
+                ...Array(this.FRAME_HOLD).fill({ key: 'frame_000' }),
+                ...this.generateFrames(1, 48),
+                ...Array(this.FRAME_HOLD).fill({ key: 'frame_049' })
+            ],
+            frameRate: this.FPS,
+            repeat: 0
         });
-
-        // Criar uma segunda animação para o loop
-        const loopFrameNames = [];
-        for (let i = 1; i <= 48; i++) {
-            const frameNumber = i.toString().padStart(3, '0');
-            loopFrameNames.push({ key: `frame_${frameNumber}` });
-        }
-        for (let i = 0; i < 72; i++) {
-            loopFrameNames.push({ key: 'frame_049' });
-        }
 
         this.anims.create({
             key: 'morphLoop',
-            frames: loopFrameNames,
-            frameRate: 24,
-            repeat: -1 // Repetir infinitamente
+            frames: [
+                ...this.generateFrames(1, 48),
+                ...Array(this.FRAME_HOLD).fill({ key: 'frame_049' })
+            ],
+            frameRate: this.FPS,
+            repeat: -1
         });
+    }
 
+    private playIntroSequence(): void {
+        this.tweens.add({
+            targets: this.morphingSprite,
+            alpha: 1,
+            duration: 2000,
+            onComplete: () => {
+                this.morphingSprite.play('morph');
+                this.animateMorphingSprite();
+
+                this.morphingSprite.once('animationcomplete', () => {
+                    this.morphingSprite.play('morphLoop');
+                });
+
+                this.revealCopyright();
+            }
+        });
+    }
+
+    private animateMorphingSprite(): void {
+        this.tweens.add({
+            targets: this.morphingSprite,
+            scale: 0.35,
+            duration: 7000,
+            ease: 'Sine.easeInOut'
+        });
+    }
+
+    private createCopyrightText(): void {
         this.copyrightText = this.add.text(
-            this.cameras.main.width / 2,
-            this.cameras.main.height - 55,
+            this.scale.width / 2,
+            this.scale.height - 55,
             'Papai Lion\nIndie Games\n\nTODOS OS DIREITOS RESERVADOS',
             {
                 fontFamily: 'monospace',
@@ -83,33 +110,10 @@ export default class BootScene extends Scene {
                 color: '#FFFFFF',
                 align: 'center'
             }
-        );
-        this.copyrightText.setOrigin(0.5);
-        this.copyrightText.setAlpha(-3);
-
-        // Iniciar sequência de animação
-        this.showMorphing();
+        ).setOrigin(0.5).setAlpha(0);
     }
 
-    private showMorphing(): void {
-        // Fade in do morphing e iniciar animação
-        this.tweens.add({
-            targets: this.morphingSprite,
-            alpha: 1,
-            duration: 2000,
-            onComplete: () => {
-                this.morphingSprite.play('morph');
-                // Quando a primeira animação terminar, iniciar o loop
-                this.morphingSprite.on('animationcomplete', () => {
-                    this.morphingSprite.play('morphLoop');
-                });
-                this.showCopyright();
-            }
-        });
-    }
-
-    private showCopyright(): void {
-        // Fade in do copyright
+    private revealCopyright(): void {
         this.tweens.add({
             targets: this.copyrightText,
             alpha: 1,
@@ -117,7 +121,15 @@ export default class BootScene extends Scene {
             delay: 1000
         });
 
-        // Fade out do morphing e copyright
+        this.tweens.add({
+            targets: this.copyrightText,
+            alpha: { from: 0.4, to: 1 },
+            yoyo: true,
+            repeat: -1,
+            duration: 1000,
+            delay: 2500
+        });
+
         this.tweens.add({
             targets: [this.morphingSprite, this.copyrightText],
             alpha: 0,
@@ -125,9 +137,13 @@ export default class BootScene extends Scene {
             delay: 5000
         });
 
-        // Após a sequência completa, carregar o menu principal
-        this.time.delayedCall(9000, () => {
-            this.scene.start('MenuScene');
+        this.time.delayedCall(9000, () => this.scene.start('MenuScene'));
+    }
+
+    private generateFrames(start: number, end: number): { key: string }[] {
+        return Array.from({ length: end - start + 1 }, (_, i) => {
+            const frame = (i + start).toString().padStart(3, '0');
+            return { key: `frame_${frame}` };
         });
     }
 } 
