@@ -1,6 +1,7 @@
 import { Scene, GameObjects, Physics } from 'phaser';
 import { NPC } from '../scenes/BaseScene';
 import { DialogBox } from '../components/DialogBox';
+import { InteractionMenu } from '../components/InteractionMenu';
 
 export interface NPCConfig {
     id: string;
@@ -19,7 +20,9 @@ export class NPCController {
     private configs: Map<string, NPCConfig>;
     private dialogActive: boolean = false;
     private currentDialog?: DialogBox;
+    private currentMenu?: InteractionMenu;
     private readonly interactionDistance: number = 50;
+    private isInteracting: boolean = false;
 
     constructor(scene: Scene) {
         this.scene = scene;
@@ -68,7 +71,7 @@ export class NPCController {
     }
 
     public checkNPCInteractions(playerSprite: Physics.Arcade.Sprite): void {
-        if (this.dialogActive || !this.scene.input.keyboard) return;
+        if (this.dialogActive || this.isInteracting || !this.scene.input.keyboard) return;
 
         const spaceKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         if (!spaceKey.isDown) return;
@@ -86,16 +89,102 @@ export class NPCController {
             if (distance <= this.interactionDistance) {
                 const config = this.configs.get(id);
                 if (config) {
-                    this.showDialog(config.dialog[npc.currentDialogIndex], {
+                    console.log('[NPCController] Interação com NPC detectada:', config.name);
+                    this.showInteractionMenu(config, npc);
+                    return; // Garante que só um NPC seja interagido por vez
+                }
+            }
+        }
+    }
+
+    private showInteractionMenu(config: NPCConfig, npc: NPC): void {
+        console.log('[NPCController] Abrindo menu de interação para:', config.name);
+        
+        // Fecha qualquer menu ou diálogo existente
+        if (this.currentMenu) {
+            this.currentMenu.close();
+        }
+        if (this.currentDialog) {
+            this.currentDialog.close();
+        }
+
+        this.isInteracting = true;
+        const options = [
+            {
+                icon: '👁️',
+                label: 'Olhar',
+                onSelect: () => {
+                    console.log('[NPCController] Opção "Olhar" selecionada para:', config.name);
+                    this.currentMenu?.close();
+                    this.showDialog(`Você observa ${config.name}. Ele está dormindo profundamente... lembra muito o Snorlax naquele outro jogo.`, {
                         portrait: config.spriteKey === 'lion' ? 'lionface' : undefined,
                         name: config.name,
                         color: 0xe43675
                     });
-                    npc.currentDialogIndex = (npc.currentDialogIndex + 1) % config.dialog.length;
                 }
-                break;
+            },
+            {
+                icon: '👄',
+                label: 'Falar',
+                onSelect: () => {
+                    console.log('[NPCController] Opção "Falar" selecionada para:', config.name);
+                    this.currentMenu?.close();
+                    this.showDialog('não dá pra falar com ele, esta dormindo como uma pedra', {
+                        portrait: config.spriteKey === 'lion' ? 'lionface' : undefined,
+                        name: config.name,
+                        color: 0xe43675
+                    });
+                }
+            },
+            {
+                icon: '👊',
+                label: 'Bater',
+                onSelect: () => {
+                    console.log('[NPCController] Opção "Bater" selecionada para:', config.name);
+                    this.currentMenu?.close();
+                    this.showDialog(`não vou bater no ${config.name}. Ele é meu amigo.`, {
+                        portrait: config.spriteKey === 'lion' ? 'lionface' : undefined,
+                        name: config.name,
+                        color: 0xe43675
+                    });
+                }
+            },
+            {
+                icon: '👢',
+                label: 'Chutar',
+                onSelect: () => {
+                    console.log('[NPCController] Opção "Chutar" selecionada para:', config.name);
+                    this.currentMenu?.close();
+                    this.showDialog(`Você ia chutar ${config.name}, mas desiste no último momento. Afinal, que tipo de pessoa chutaria alguém que está dormindo tão tranquilamente?`, {
+                        portrait: config.spriteKey === 'lion' ? 'lionface' : undefined,
+                        name: config.name,
+                        color: 0xe43675
+                    });
+                }
+            },
+            {
+                icon: '🚪',
+                label: 'Sair',
+                onSelect: () => {
+                    console.log('[NPCController] Opção "Sair" selecionada para:', config.name);
+                    this.currentMenu?.close();
+                    this.isInteracting = false;
+                }
             }
-        }
+        ];
+
+        this.currentMenu = new InteractionMenu({
+            scene: this.scene,
+            x: this.scene.cameras.main.width / 2,
+            y: this.scene.cameras.main.height - 60,
+            options,
+            title: config.name,
+            onClose: () => {
+                console.log('[NPCController] Menu fechado para:', config.name);
+                this.isInteracting = false;
+                this.currentMenu = undefined;
+            }
+        });
     }
 
     private showDialog(
@@ -112,14 +201,14 @@ export class NPCController {
         const screenWidth = this.scene.cameras.main.width;
         const screenHeight = this.scene.cameras.main.height;
         const x = screenWidth / 2;
-        const y = screenHeight - (screenHeight * 0.15);
+        const y = screenHeight - 80;
 
         this.currentDialog = new DialogBox({
             scene: this.scene,
             x,
             y,
             width: screenWidth * 0.9,
-            height: screenHeight * 0.3,
+            height: 120,
             dialog,
             portrait: options.portrait,
             name: options.name,

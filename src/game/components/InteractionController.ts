@@ -93,7 +93,7 @@ export class InteractionController {
                 }
             },
             {
-                icon: '💬',
+                icon: '👄',
                 label: 'Falar',
                 onSelect: () => { 
                     console.log('[InteractionController] Opção "Falar" selecionada.');
@@ -108,6 +108,15 @@ export class InteractionController {
                     console.log('[InteractionController] Opção "Chutar" selecionada.');
                     this.currentMenu?.close(); 
                     this.showDialogOption(() => this.handleKick(point)); 
+                }
+            },
+            {
+                icon: '🚪',
+                label: 'Sair',
+                onSelect: () => { 
+                    console.log('[InteractionController] Opção "Sair" selecionada.');
+                    this.currentMenu?.close();
+                    this.isInteracting = false;
                 }
             }
         ];
