@@ -11,7 +11,6 @@ interface InteractionMenuConfig {
     x: number;
     y: number;
     options: InteractionMenuOption[];
-    portrait?: string; // chave da imagem do rosto
     onClose?: () => void;
     title?: string; // título do objeto
 }
@@ -28,7 +27,6 @@ export class InteractionMenu {
     private keyEnter: Phaser.Input.Keyboard.Key;
     private keySpace: Phaser.Input.Keyboard.Key;
     private keyEsc: Phaser.Input.Keyboard.Key;
-    private portrait?: GameObjects.Image;
     private border: GameObjects.Rectangle;
     private onClose?: () => void;
     private titleText?: GameObjects.Text;
@@ -44,7 +42,7 @@ export class InteractionMenu {
         this.background = this.scene.add.rectangle(
             config.x,
             config.y,
-            200,
+            300,
             100,
             0x1a237e // Azul igual ao DialogBox
         );
@@ -62,18 +60,6 @@ export class InteractionMenu {
         );
         this.border.setScrollFactor(0);
         this.border.setDepth(99);
-
-        // Adicionar portrait se fornecido
-        if (config.portrait) {
-            this.portrait = this.scene.add.image(
-                config.x - 80, // Ajuste para a esquerda do menu
-                config.y,
-                config.portrait
-            );
-            this.portrait.setScale(1);
-            this.portrait.setScrollFactor(0);
-            this.portrait.setDepth(102);
-        }
 
         // Exibir título se fornecido
         if (config.title) {
@@ -94,9 +80,7 @@ export class InteractionMenu {
 
         // Criar botões
         const spacing = 50;
-        // Se houver portrait, desloca os botões para a direita
-        const portraitOffset = config.portrait ? 40 : 0;
-        const startX = config.x - ((config.options.length - 1) * spacing) / 2 + portraitOffset;
+        const startX = config.x - ((config.options.length - 1) * spacing) / 2;
         
         config.options.forEach((option, index) => {
             const button = this.scene.add.text(
@@ -104,7 +88,7 @@ export class InteractionMenu {
                 config.y,
                 `${option.icon}\n${option.label}`,
                 {
-                    fontSize: '12px',
+                    fontSize: '10px',
                     fontFamily: 'monospace',
                     color: '#FFFFFF',
                     align: 'center',
@@ -168,7 +152,6 @@ export class InteractionMenu {
         if (!this.isActive) return;
         this.background.destroy();
         this.buttons.forEach(btn => btn.destroy());
-        if (this.portrait) this.portrait.destroy();
         if (this.border) this.border.destroy();
         if (this.titleText) this.titleText.destroy();
         this.isActive = false;

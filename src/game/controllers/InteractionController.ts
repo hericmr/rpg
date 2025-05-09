@@ -1,5 +1,6 @@
 import { Scene, GameObjects, Physics } from 'phaser';
 import { DialogBox } from '../components/DialogBox';
+import { InteractionMenu } from '../components/InteractionMenu';
 
 export interface InteractionPoint {
     x: number;
@@ -26,6 +27,7 @@ export class InteractionController {
         isOn: false,
         isBluetoothEnabled: false
     };
+    private currentMenu?: InteractionMenu;
 
     constructor(scene: Scene) {
         this.scene = scene;
@@ -60,13 +62,8 @@ export class InteractionController {
                     // Se for a JBL, mostrar diálogo com opções
                     if (point.dialog.includes('JBL')) {
                         this.showJBLDialog();
-                } else {
-                    this.showDialog(point.dialog, {
-                        isPlayerThought: point.type === 'thought',
-                        portrait: point.type === 'thought' ? 'player_portrait' : undefined,
-                        name: point.type === 'thought' ? 'Você' : undefined,
-                        color: point.type === 'thought' ? 0x1a237e : 0xe43675
-                    });
+                    } else {
+                        this.handleLook(point);
                     }
                 }
                 break;
@@ -157,5 +154,24 @@ export class InteractionController {
 
     public isDialogActive(): boolean {
         return this.dialogActive;
+    }
+
+    private handleLook(point: InteractionPoint): void {
+        let message = '';
+        switch (point.type) {
+            case 'jbl':
+                message = 'Uma JBL portátil com overclock, superpotente, apliquei um pouco de graxa e agora atinge 9999 decibeis';
+                break;
+            case 'lion':
+                message = 'dr lion um npc muito legal.';
+                break;
+            default:
+                message = 'Você olha atentamente, mas não vê nada de especial.';
+        }
+        this.showDialog(message, {
+            portrait: 'player_portrait',
+            name: 'Você',
+            color: 0x1a237e
+        });
     }
 } 

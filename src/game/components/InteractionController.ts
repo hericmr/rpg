@@ -7,7 +7,10 @@ interface InteractionPoint {
     y: number;
     radius: number;
     type: string;
-    data?: any;
+    data?: {
+        isOn?: boolean;
+        [key: string]: any;
+    };
 }
 
 export class InteractionController {
@@ -115,7 +118,7 @@ export class InteractionController {
                 title = 'JBL';
                 break;
             case 'lion':
-                title = 'Leão';
+                title = 'Lion';
                 break;
             default:
                 title = 'Objeto';
@@ -125,7 +128,6 @@ export class InteractionController {
             x: this.scene.cameras.main.width / 2,
             y: this.scene.cameras.main.height - 60,
             options,
-            portrait: 'player_portrait',
             title,
             onClose: () => {
                 this.isInteracting = false;
@@ -143,60 +145,73 @@ export class InteractionController {
     }
 
     private handleLook(point: InteractionPoint): void {
-        let message = '';
-        switch (point.type) {
-            case 'jbl':
-                message = 'Uma JBL portátil com overclock, superpotente, apliquei um pouco de graxa e agora atinge 9999 decibeis';
-                break;
-            case 'lion':
-                message = 'dr lion um npc muito legal.';
-                break;
-            default:
-                message = 'Você olha atentamente, mas não vê nada de especial.';
+        if (point.type === 'jbl') {
+            const isOn = point.data?.isOn ?? false;
+            const message = isOn
+                ? 'Uma JBL portátil com overclock, superpotente, apliquei um pouco de graxa e agora atinge 9999 decibeis. Está ligada!'
+                : 'JBL portátil com overclock, superpotente, apliquei graxa e agora atinge 99 mil decibeis.';
+            this.showDialog(message);
+            return;
         }
-        this.showDialog(message);
+
+        if (point.type === 'lion') {
+            this.showDialog('dr lion um npc muito legal.');
+            return;
+        }
+
+        this.showDialog('Você olha atentamente, mas não vê nada de especial.');
     }
 
     private handlePick(point: InteractionPoint): void {
-        let message = '';
-        switch (point.type) {
-            case 'jbl':
-                message = 'blue tooth ativado! a JBL ja pode ser usada.';
-                break;
-            default:
-                message = 'Você não consegue pegar isso.';
+        if (point.type === 'jbl') {
+            if (!point.data) point.data = {};
+            point.data.isOn = !point.data.isOn;
+
+            const stateMsg = point.data.isOn
+                ? 'Bluetooth ativado! A JBL agora está ligada e vai fazer o chão tremer!'
+                : 'Bluetooth desativado! A JBL foi desligada.';
+            
+            this.showDialog(stateMsg);
+            return;
         }
-        this.showDialog(message);
+
+        this.showDialog('Você não consegue pegar isso.');
     }
 
     private handleTalk(point: InteractionPoint): void {
-        let message = '';
-        switch (point.type) {
-            case 'jbl':
-                message = 'A JBL parece estar em modo de espera.';
-                break;
-            case 'lion':
-                message = 'Você tenta conversar com a estátua, mas ela não responde.';
-                break;
-            default:
-                message = 'Não há ninguém para conversar aqui.';
+        if (point.type === 'jbl') {
+            const isOn = point.data?.isOn ?? false;
+            const message = isOn
+                ? 'Essa jbl ficou braba demais depois do overclock e de eu ter passado graxa nas engrenagens... .'
+                : 'A JBL está, aguardando um comando.';
+            this.showDialog(message);
+            return;
         }
-        this.showDialog(message);
+
+        if (point.type === 'lion') {
+            this.showDialog('dorme como pedra, mas ela não responde.');
+            return;
+        }
+
+        this.showDialog('Não há ninguém para conversar aqui.');
     }
 
     private handleKick(point: InteractionPoint): void {
-        let message = '';
-        switch (point.type) {
-            case 'jbl':
-                message = 'Essa JBL está muito alta para chutar.';
-                break;
-            case 'lion':
-                message = 'Você chuta o Lion. Seu pé dói, mas ele continua dormindo.';
-                break;
-            default:
-                message = 'Você chuta o ar.';
+        if (point.type === 'jbl') {
+            const isOn = point.data?.isOn ?? false;
+            const message = isOn
+                ? 'Não tem pra que chutar, ela já está ligada.'
+                : 'Essa JBL está muito alta para chutar.';
+            this.showDialog(message);
+            return;
         }
-        this.showDialog(message);
+
+        if (point.type === 'lion') {
+            this.showDialog('Você chuta o Lion. Seu pé dói, mas ele continua dormindo.');
+            return;
+        }
+
+        this.showDialog('Você chuta o ar.');
     }
 
     private showDialog(message: string): void {
@@ -204,13 +219,19 @@ export class InteractionController {
             this.currentDialog.close();
         }
         console.log('[InteractionController] Abrindo diálogo:', message);
+        const screenWidth = this.scene.cameras.main.width;
+        const screenHeight = this.scene.cameras.main.height;
+        
         this.currentDialog = new DialogBox({
             scene: this.scene,
-            x: this.scene.cameras.main.width / 2,
-            y: this.scene.cameras.main.height - 100,
-            width: 400,
-            height: 100,
+            x: screenWidth / 2,
+            y: screenHeight - 90, // Posiciona mais próximo da parte inferior
+            width: screenWidth * 1, // Usa 90% da largura da tela
+            height: 120, // Altura fixa para o diálogo
             dialog: message,
+            portrait: 'player_portrait',
+            name: 'Você',
+            dialogColor: 0x1a237e,
             onClose: () => {
                 this.isInteracting = false;
                 this.currentDialog = null;

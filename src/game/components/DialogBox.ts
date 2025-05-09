@@ -76,10 +76,10 @@ export class DialogBox {
     if (config.portrait) {
       this.portrait = this.scene.add.image(
         config.x - (config.width / 2) + 40,
-        config.y - 10, // Ajustado para 10 pixels para cima
+        config.y - 10,
         config.portrait
       );
-      this.portrait.setScale(0.5); // Aumentado a escala para 1.5
+      this.portrait.setScale(0.8);
       this.portrait.setScrollFactor(0);
       this.portrait.setDepth(2);
     }
@@ -91,7 +91,7 @@ export class DialogBox {
         config.y - (config.height / 2) + 20,
         config.name,
         {
-          fontSize: '10px',
+          fontSize: '14px',
           fontFamily: 'monospace',
           color: textColor
         }
@@ -106,7 +106,7 @@ export class DialogBox {
       config.y,
       config.dialog,
       {
-        fontSize: '12px',
+        fontSize: '14px',
         fontFamily: 'monospace',
         color: textColor,
         wordWrap: { width: config.width - (this.portrait ? 100 : 40) }
@@ -126,7 +126,7 @@ export class DialogBox {
           baseY,
           option.label,
           {
-            fontSize: '14px',
+            fontSize: '10px',
             color: '#FFD700',
             backgroundColor: '#222',
             padding: { x: 10, y: 5 }
