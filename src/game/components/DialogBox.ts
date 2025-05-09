@@ -72,15 +72,14 @@ export class DialogBox {
     );
     this.background.setScrollFactor(0);
     this.background.setDepth(1);
-
     // Adicionar retrato se fornecido
     if (config.portrait) {
       this.portrait = this.scene.add.image(
         config.x - (config.width / 2) + 40,
-        config.y,
+        config.y - 10, // Ajustado para 10 pixels para cima
         config.portrait
       );
-      this.portrait.setScale(2);
+      this.portrait.setScale(0.5); // Aumentado a escala para 1.5
       this.portrait.setScrollFactor(0);
       this.portrait.setDepth(2);
     }
@@ -92,7 +91,7 @@ export class DialogBox {
         config.y - (config.height / 2) + 20,
         config.name,
         {
-          fontSize: '15px',
+          fontSize: '10px',
           fontFamily: 'monospace',
           color: textColor
         }
@@ -152,7 +151,7 @@ export class DialogBox {
 
       // Configurar tecla de espaço
       const spaceKey = this.scene.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-      spaceKey?.once('down', () => {
+      spaceKey?.on('down', () => {
         if (this.timer) this.timer.destroy();
         this.close();
       });

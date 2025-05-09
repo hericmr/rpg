@@ -1,5 +1,8 @@
 import { Scene, GameObjects, Physics, Input } from 'phaser';
 import { DialogBox } from '../components/DialogBox';
+import { PlayerController } from '../controllers/PlayerController';
+import { NPCController } from '../controllers/NPCController';
+import { InteractionController } from '../controllers/InteractionController';
 
 export interface Player {
   sprite: Physics.Arcade.Sprite;
@@ -30,138 +33,78 @@ export interface NPC {
 }
 
 export abstract class BaseScene extends Scene {
-  protected player!: Player;
-  protected cursors: {
-    left?: Phaser.Input.Keyboard.Key;
-    right?: Phaser.Input.Keyboard.Key;
-    up?: Phaser.Input.Keyboard.Key;
-    down?: Phaser.Input.Keyboard.Key;
-    shift?: Phaser.Input.Keyboard.Key;
-  } = {};
+  protected playerController!: PlayerController;
+  protected npcController: NPCController;
+  protected interactionController: InteractionController;
   protected dialogActive: boolean = false;
-  protected interactionPoints?: { x: number; y: number; dialog: string }[];
-  protected currentDialog?: DialogBox;
-
-  protected readonly NORMAL_SPEED = 100;
-  protected readonly SPRINT_SPEED = 200;
 
   constructor(config: string | Phaser.Types.Scenes.SettingsConfig) {
     super(config);
+    this.npcController = new NPCController(this);
+    this.interactionController = new InteractionController(this);
   }
 
-  protected setupInput(): void {
-    if (!this.input.keyboard) return;
-    
-    this.cursors = this.input.keyboard.addKeys({
-      left: Input.Keyboard.KeyCodes.LEFT,
-      right: Input.Keyboard.KeyCodes.RIGHT,
-      up: Input.Keyboard.KeyCodes.UP,
-      down: Input.Keyboard.KeyCodes.DOWN,
-      shift: Input.Keyboard.KeyCodes.SHIFT
-    });
+  protected setupPlayer(config: {
+    startX: number;
+    startY: number;
+    spriteKey: string;
+    normalSpeed?: number;
+    sprintSpeed?: number;
+  }): void {
+    this.playerController = new PlayerController(this, config);
   }
 
-  protected setupPlayer(startX: number, startY: number): void {
-    this.player = {
-      sprite: this.physics.add.sprite(startX, startY, 'player'),
-      inventory: [],
-      stats: {
-        clearance: "Branco",
-        implants: []
-      }
-    };
+  protected setupNPCs(): void {
+    this.npcController = new NPCController(this);
+  }
 
-    this.player.sprite.setSize(12, 12);
-    this.player.sprite.setOffset(2, 2);
-    this.player.sprite.setScale(2);
+  protected setupInteractions(): void {
+    this.interactionController = new InteractionController(this);
   }
 
   protected setupCamera(mapWidth: number, mapHeight: number): void {
-    this.cameras.main.setBounds(0, 0, mapWidth, mapHeight);
-    this.cameras.main.startFollow(this.player.sprite);
-    this.cameras.main.setZoom(1);
-    this.cameras.main.setRoundPixels(true);
+    this.playerController.setupCamera(mapWidth, mapHeight);
   }
 
-  protected showDialog(dialog: string, isPlayerThought: boolean = false): void {
-    if (this.dialogActive) return;
+  protected setupCollisions(collidableLayers: Phaser.Tilemaps.TilemapLayer[]): void {
+    this.playerController.setupCollisions(collidableLayers);
+    this.npcController.setupCollisions(collidableLayers);
+    this.npcController.setupPlayerCollisions(this.playerController.getPlayer().sprite);
+  }
 
-    this.dialogActive = true;
-    this.player.sprite.setVelocity(0, 0);
-
-    const screenWidth = this.cameras.main.width;
-    const screenHeight = this.cameras.main.height;
-    const x = screenWidth / 2;
-    const y = screenHeight - (screenHeight * 0.15);
-
-    this.currentDialog = new DialogBox({
-      scene: this,
-      x: x,
-      y: y,
-      width: screenWidth * 0.9,
-      height: screenHeight * 0.3,
-      dialog: dialog,
-      portrait: isPlayerThought ? 'player_portrait' : undefined,
-      name: isPlayerThought ? 'Você' : undefined,
-      dialogColor: isPlayerThought ? 0x1a237e : 0xe43675,
-      textColor: '#FFFFFF',
-      onClose: () => {
-        this.dialogActive = false;
-      }
-    });
+  protected showDialog(
+    dialog: string,
+    options: {
+      isPlayerThought?: boolean;
+      portrait?: string;
+      name?: string;
+      color?: number;
+    } = {}
+  ): void {
+    this.playerController.setDialogActive(true);
+    this.interactionController.showDialog(dialog, options);
   }
 
   protected checkInteractions(): void {
-    if (!this.input.keyboard || !this.interactionPoints) return;
-    
-    const spaceKey = this.input.keyboard.addKey(Input.Keyboard.KeyCodes.SPACE);
-    if (spaceKey.isDown) {
-      this.checkInteractionPoints();
-    }
-  }
-
-  protected checkInteractionPoints(): void {
-    if (!this.interactionPoints) return;
-
-    const playerBounds = this.player.sprite.getBounds();
-    const interactionDistance = 50;
-
-    for (const point of this.interactionPoints) {
-      const distance = Phaser.Math.Distance.Between(
-        playerBounds.centerX,
-        playerBounds.centerY,
-        point.x,
-        point.y
-      );
-
-      if (distance <= interactionDistance) {
-        this.showDialog(point.dialog, true);
-        break;
-      }
-    }
+    const player = this.playerController.getPlayer();
+    this.interactionController.checkInteractions(
+      player.sprite,
+      player.stats.clearance
+    );
+    this.npcController.checkNPCInteractions(player.sprite);
   }
 
   protected handleMovement(): void {
-    if (!this.player || this.dialogActive) return;
+    this.playerController.update();
+  }
 
-    const speed = this.cursors.shift?.isDown ? this.SPRINT_SPEED : this.NORMAL_SPEED;
+  protected updateNPCs(): void {
+    this.npcController.update();
+  }
 
-    // Movimento horizontal
-    if (this.cursors.left?.isDown) {
-      this.player.sprite.setVelocityX(-speed);
-    } else if (this.cursors.right?.isDown) {
-      this.player.sprite.setVelocityX(speed);
-    } else {
-      this.player.sprite.setVelocityX(0);
-    }
-
-    // Movimento vertical
-    if (this.cursors.up?.isDown) {
-      this.player.sprite.setVelocityY(-speed);
-    } else if (this.cursors.down?.isDown) {
-      this.player.sprite.setVelocityY(speed);
-    } else {
-      this.player.sprite.setVelocityY(0);
-    }
+  update(): void {
+    this.handleMovement();
+    this.checkInteractions();
+    this.updateNPCs();
   }
 } 
