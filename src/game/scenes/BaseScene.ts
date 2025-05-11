@@ -44,12 +44,18 @@ export abstract class BaseScene extends Scene {
     this.interactionController = new InteractionController(this);
   }
 
+  create(): void {
+    // Initialize controllers after scene is ready
+    this.interactionController.init();
+  }
+
   protected setupPlayer(config: {
     startX: number;
     startY: number;
     spriteKey: string;
     normalSpeed?: number;
     sprintSpeed?: number;
+    clearance?: string;
   }): void {
     this.playerController = new PlayerController(this, config);
   }
@@ -59,7 +65,7 @@ export abstract class BaseScene extends Scene {
   }
 
   protected setupInteractions(): void {
-    this.interactionController = new InteractionController(this);
+    // This method should be overridden by child classes
   }
 
   protected setupCamera(mapWidth: number, mapHeight: number): void {
@@ -78,7 +84,7 @@ export abstract class BaseScene extends Scene {
       isPlayerThought?: boolean;
       portrait?: string;
       name?: string;
-      color?: number;
+      dialogColor?: number;
     } = {}
   ): void {
     this.playerController.setDialogActive(true);

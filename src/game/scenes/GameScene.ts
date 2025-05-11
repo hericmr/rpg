@@ -8,7 +8,10 @@ import { GBC_COLORS } from '../config/colors';
 import { CorporateOffice, SANTOSPUNK_CORPORATE_OFFICE, renderOfficeState } from '../config/office';
 import { BaseScene } from './BaseScene';
 import { NPCConfig } from '../controllers/NPCController';
-import { InteractionController } from '../components/InteractionController';
+import { InteractionController } from '../controllers/InteractionController';
+import { DialogBox } from '../components/DialogBox';
+import { NPCController } from '../controllers/NPCController';
+import { PlayerController } from '../controllers/PlayerController';
 
 // Interfaces para melhor tipagem
 interface MapLayers {
@@ -82,6 +85,7 @@ export default class GameScene extends BaseScene {
     this.load.image('chair', `${publicUrl}/assets/chair.svg`);
     this.load.image('terminal', `${publicUrl}/assets/terminal.svg`);
     this.load.image('elevator', `${publicUrl}/assets/elevator.svg`);
+    this.load.audio('techno', `${publicUrl}/assets/lesbica_futurista.mp3`);
   }
 
   private setupAssetLoading(): void {
@@ -117,6 +121,8 @@ export default class GameScene extends BaseScene {
   }
 
   create(): void {
+    super.create(); // Call parent's create to initialize controllers
+    
     this.setupPixelPerfectRendering();
     this.initializeGBEffect();
     
@@ -130,7 +136,6 @@ export default class GameScene extends BaseScene {
     this.createMapLayers(map, tileset);
     this.setupPlayerFromMap(map);
     this.setupNPCs();
-    this.interactionMenuController = new InteractionController(this);
     this.setupInteractions();
     this.setupCamera(map.widthInPixels, map.heightInPixels);
     this.setupCollisions([
@@ -185,6 +190,21 @@ export default class GameScene extends BaseScene {
         !this.mapLayersCache.jblLayer) {
       throw new Error('Erro ao criar camadas do mapa');
     }
+
+    // Configurar colisões
+    this.mapLayersCache.wallsLayer.setCollisionByProperty({ collides: true });
+    this.mapLayersCache.cadeirasLayer.setCollisionByExclusion([-1]);
+    this.mapLayersCache.mesasLayer.setCollisionByExclusion([-1]);
+    this.mapLayersCache.computadoresLayer.setCollisionByExclusion([-1]);
+    this.mapLayersCache.jblLayer.setCollisionByExclusion([-1]);
+
+    // Tornar as camadas de colisão visíveis para debug (opcional)
+    const debugGraphics = this.add.graphics().setAlpha(0.75);
+    this.mapLayersCache.wallsLayer.renderDebug(debugGraphics, {
+      tileColor: null,
+      collidingTileColor: new Phaser.Display.Color(243, 134, 48, 255),
+      faceColor: new Phaser.Display.Color(40, 39, 37, 255)
+    });
   }
 
   private setupPlayerFromMap(map: Phaser.Tilemaps.Tilemap): void {
@@ -203,7 +223,8 @@ export default class GameScene extends BaseScene {
     this.setupPlayer({
       startX,
       startY,
-      spriteKey: 'player'
+      spriteKey: 'player',
+      clearance: 'employee' // Set default clearance for the main game scene
     });
   }
 
@@ -254,17 +275,19 @@ export default class GameScene extends BaseScene {
         x: obj.x || 0,
         y: obj.y || 0,
         radius: 50, // Raio padrão para interação
-        type: 'jbl'
+        type: 'jbl',
+        dialog: 'Uma JBL com overclock, superpotente... atinge 99 mil decibeis.'
       }));
       console.log('[DEBUG] interactionPoints extraídos do mapa:', interactionPoints);
-      interactionPoints.forEach(point => this.interactionMenuController.addInteractionPoint(point));
+      this.interactionController.addInteractionPoints(interactionPoints);
     }
     // Adiciona um ponto de interação manual para teste perto do player
-    this.interactionMenuController.addInteractionPoint({
+    this.interactionController.addInteractionPoint({
       x: 50,
       y: 50,
       radius: 100,
-      type: 'jbl'
+      type: 'jbl',
+      dialog: 'Uma JBL com overclock, superpotente... atinge 99 mil decibeis.'
     });
     console.log('[DEBUG] Ponto de interação manual adicionado em (50,50)');
   }
@@ -297,9 +320,6 @@ export default class GameScene extends BaseScene {
 
   update(): void {
     super.update();
-    if (this.interactionMenuController) {
-      this.interactionMenuController.update();
-    }
     const player = this.playerController.getPlayer();
     if (!player?.sprite) return;
 

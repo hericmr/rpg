@@ -1,5 +1,13 @@
 import { Scene, Physics, Input } from 'phaser';
-import { Player } from '../scenes/BaseScene';
+
+interface Player {
+    sprite: Phaser.Physics.Arcade.Sprite;
+    direction: 'up' | 'down' | 'left' | 'right';
+    isMoving: boolean;
+    stats: {
+        clearance: string;
+    };
+}
 
 export interface PlayerConfig {
     startX: number;
@@ -7,6 +15,7 @@ export interface PlayerConfig {
     spriteKey: string;
     normalSpeed?: number;
     sprintSpeed?: number;
+    clearance?: string;
 }
 
 export class PlayerController {
@@ -34,19 +43,77 @@ export class PlayerController {
 
     private setupPlayer(config: PlayerConfig): void {
         const sprite = this.scene.physics.add.sprite(config.startX, config.startY, config.spriteKey);
-        sprite.setSize(12, 12);
-        sprite.setOffset(2, 2);
         sprite.setScale(2);
-        sprite.setData('type', 'player');
-
+        
+        // Ajustar hitbox do jogador
+        sprite.body.setSize(8, 8); // Tamanho menor para colisões mais precisas
+        sprite.body.setOffset(4, 8); // Offset para centralizar a hitbox
+        
         this.player = {
             sprite,
-            inventory: [],
+            direction: 'down',
+            isMoving: false,
             stats: {
-                clearance: "Branco",
-                implants: []
+                clearance: config.clearance ?? 'visitor' // Default to 'visitor' if no clearance provided
             }
         };
+
+        this.createPlayerAnimations();
+    }
+
+    private createPlayerAnimations(): void {
+        // Criar animações do jogador
+        this.scene.anims.create({
+            key: 'walk-down',
+            frames: this.scene.anims.generateFrameNumbers('player', { start: 0, end: 3 }),
+            frameRate: 10,
+            repeat: -1
+        });
+
+        this.scene.anims.create({
+            key: 'walk-up',
+            frames: this.scene.anims.generateFrameNumbers('player', { start: 4, end: 7 }),
+            frameRate: 10,
+            repeat: -1
+        });
+
+        this.scene.anims.create({
+            key: 'walk-left',
+            frames: this.scene.anims.generateFrameNumbers('player', { start: 8, end: 11 }),
+            frameRate: 10,
+            repeat: -1
+        });
+
+        this.scene.anims.create({
+            key: 'walk-right',
+            frames: this.scene.anims.generateFrameNumbers('player', { start: 12, end: 15 }),
+            frameRate: 10,
+            repeat: -1
+        });
+
+        this.scene.anims.create({
+            key: 'idle-down',
+            frames: [{ key: 'player', frame: 0 }],
+            frameRate: 10
+        });
+
+        this.scene.anims.create({
+            key: 'idle-up',
+            frames: [{ key: 'player', frame: 4 }],
+            frameRate: 10
+        });
+
+        this.scene.anims.create({
+            key: 'idle-left',
+            frames: [{ key: 'player', frame: 8 }],
+            frameRate: 10
+        });
+
+        this.scene.anims.create({
+            key: 'idle-right',
+            frames: [{ key: 'player', frame: 12 }],
+            frameRate: 10
+        });
     }
 
     private setupInput(): void {
@@ -108,7 +175,8 @@ export class PlayerController {
     public setupCollisions(collidableLayers: Phaser.Tilemaps.TilemapLayer[]): void {
         collidableLayers.forEach(layer => {
             if (layer) {
-                this.scene.physics.add.collider(this.player.sprite, layer);
+                this.scene.physics.add.collider(this.player.sprite, layer, undefined, undefined, this);
+                console.log(`Colisão configurada para camada: ${layer.layer.name}`);
             }
         });
     }

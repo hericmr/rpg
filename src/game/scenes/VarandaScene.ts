@@ -36,6 +36,8 @@ export default class VarandaScene extends BaseScene {
     }
 
     create(): void {
+        super.create();
+        
         console.log('Iniciando criação da cena...');
         
         this.setupPixelPerfectRendering();
@@ -95,25 +97,81 @@ export default class VarandaScene extends BaseScene {
             console.error('Erro ao criar camadas do mapa');
             return;
         }
+
+        // Configurar colisões
+        this.mapLayersCache.wallsLayer.setCollisionByProperty({ collides: true });
+        this.mapLayersCache.objetosLayer.setCollisionByExclusion([-1]);
+        this.mapLayersCache.plantasLayer.setCollisionByExclusion([-1]);
+
+        // Tornar as camadas de colisão visíveis para debug (opcional)
+        const debugGraphics = this.add.graphics().setAlpha(0.75);
+        this.mapLayersCache.wallsLayer.renderDebug(debugGraphics, {
+            tileColor: null,
+            collidingTileColor: new Phaser.Display.Color(243, 134, 48, 255),
+            faceColor: new Phaser.Display.Color(40, 39, 37, 255)
+        });
     }
 
     private setupPlayerFromMap(map: Phaser.Tilemaps.Tilemap): void {
         this.setupPlayer({
             startX: 32,
             startY: map.heightInPixels / 2,
-            spriteKey: 'player'
+            spriteKey: 'player',
+            clearance: 'employee'
         });
     }
 
     protected setupInteractions(): void {
         const map = this.make.tilemap({ key: 'varanda' });
+        
+        // Configurar interações do telescópio
+        const telescopioLayer = map.getObjectLayer('telescopio');
+        if (telescopioLayer) {
+            const telescopioPoints: InteractionPoint[] = telescopioLayer.objects.map(obj => ({
+                x: obj.x || 0,
+                y: obj.y || 0,
+                radius: 50,
+                type: 'telescopio',
+                dialog: 'Um telescópio antigo. Você olha através dele e vê o horizonte de Santos...'
+            }));
+            this.interactionController.addInteractionPoints(telescopioPoints);
+        }
+
+        // Configurar interações dos vasos
+        const vasoLayer = map.getObjectLayer('vaso');
+        if (vasoLayer) {
+            const vasoPoints: InteractionPoint[] = vasoLayer.objects.map(obj => ({
+                x: obj.x || 0,
+                y: obj.y || 0,
+                radius: 50,
+                type: 'vaso',
+                dialog: 'Um vaso bonito com uma planta exótica. Parece ser uma espécie rara.'
+            }));
+            this.interactionController.addInteractionPoints(vasoPoints);
+        }
+
+        // Configurar interações do computador
+        const computadorLayer = map.getObjectLayer('computador');
+        if (computadorLayer) {
+            const computadorPoints: InteractionPoint[] = computadorLayer.objects.map(obj => ({
+                x: obj.x || 0,
+                y: obj.y || 0,
+                radius: 50,
+                type: 'computador',
+                dialog: 'Um computador antigo. Parece que ainda funciona.'
+            }));
+            this.interactionController.addInteractionPoints(computadorPoints);
+        }
+
+        // Configurar outras interações gerais
         const interactionLayer = map.getObjectLayer('interactions');
         if (interactionLayer) {
             const interactionPoints: InteractionPoint[] = interactionLayer.objects.map(obj => ({
                 x: obj.x || 0,
                 y: obj.y || 0,
+                radius: 50,
                 dialog: obj.properties?.find((p: { name: string; value: string }) => p.name === 'dialog')?.value || '',
-                type: 'thought'
+                type: obj.properties?.find((p: { name: string; value: string }) => p.name === 'type')?.value || 'thought'
             }));
             this.interactionController.addInteractionPoints(interactionPoints);
         }
