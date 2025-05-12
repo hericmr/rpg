@@ -30,6 +30,7 @@ export class InteractionMenu {
     private border: GameObjects.Rectangle;
     private onClose?: () => void;
     private titleText?: GameObjects.Text;
+    private escText?: GameObjects.Text;
 
     constructor(config: InteractionMenuConfig) {
         this.scene = config.scene;
@@ -37,6 +38,12 @@ export class InteractionMenu {
         this.buttons = [];
         this.options = config.options;
         this.onClose = config.onClose;
+
+        // Bind methods to ensure correct 'this' context
+        this.close = this.close.bind(this);
+        this.moveLeft = this.moveLeft.bind(this);
+        this.moveRight = this.moveRight.bind(this);
+        this.selectOption = this.selectOption.bind(this);
 
         // Criar fundo do menu
         this.background = this.scene.add.rectangle(
@@ -77,6 +84,21 @@ export class InteractionMenu {
             this.titleText.setScrollFactor(0);
             this.titleText.setDepth(103);
         }
+
+        // Adicionar texto do ESC
+        this.escText = this.scene.add.text(
+            config.x,
+            config.y + 35, // Abaixo dos botões
+            '[ESC para sair]',
+            {
+                fontSize: '14px',
+                fontFamily: 'monospace',
+                color: '#FFD700',
+                align: 'center'
+            }
+        ).setOrigin(0.5, 0.5);
+        this.escText.setScrollFactor(0);
+        this.escText.setDepth(103);
 
         // Criar botões
         const spacing = 50;
@@ -135,8 +157,8 @@ export class InteractionMenu {
 
     private selectOption() {
         if (!this.isActive) return;
+        // Apenas executa o callback, sem lógica especial
         this.options[this.selectedIndex].onSelect();
-        this.close();
     }
 
     private updateSelection() {
@@ -156,19 +178,69 @@ export class InteractionMenu {
     }
 
     public close(): void {
-        if (!this.isActive) return;
-        this.background.destroy();
-        this.buttons.forEach(btn => btn.destroy());
-        if (this.border) this.border.destroy();
-        if (this.titleText) this.titleText.destroy();
-        this.isActive = false;
-        // Remover listeners de teclado
-        this.keyLeft.off('down', this.moveLeft, this);
-        this.keyRight.off('down', this.moveRight, this);
-        this.keyEnter.off('down', this.selectOption, this);
-        this.keySpace.off('down', this.selectOption, this);
-        this.keyEsc.off('down', this.close, this);
-        if (this.onClose) this.onClose();
+        console.log('[InteractionMenu] Starting close() method - isActive:', this.isActive);
+        if (!this.isActive) {
+            console.log('[InteractionMenu] Menu already inactive, skipping close');
+            return;
+        }
+        
+        try {
+            this.isActive = false;
+            console.log('[InteractionMenu] Menu deactivated');
+            
+            console.log('[InteractionMenu] Destroying background');
+            if (this.background) {
+                this.background.destroy();
+            }
+            
+            console.log('[InteractionMenu] Destroying buttons');
+            this.buttons.forEach((btn, index) => {
+                console.log(`[InteractionMenu] Destroying button ${index}`);
+                if (btn) {
+                    btn.destroy();
+                }
+            });
+            this.buttons = [];
+            
+            console.log('[InteractionMenu] Destroying border');
+            if (this.border) {
+                this.border.destroy();
+            }
+            
+            console.log('[InteractionMenu] Destroying title text');
+            if (this.titleText) {
+                this.titleText.destroy();
+            }
+
+            // Destruir texto do ESC
+            if (this.escText) {
+                this.escText.destroy();
+            }
+            
+            console.log('[InteractionMenu] Removing keyboard listeners');
+            if (this.keyLeft) {
+                this.keyLeft.off('down', this.moveLeft, this);
+            }
+            if (this.keyRight) {
+                this.keyRight.off('down', this.moveRight, this);
+            }
+            if (this.keyEnter) {
+                this.keyEnter.off('down', this.selectOption, this);
+            }
+            if (this.keySpace) {
+                this.keySpace.off('down', this.selectOption, this);
+            }
+            if (this.keyEsc) {
+                this.keyEsc.off('down', this.close, this);
+            }
+            
+            if (this.onClose) {
+                console.log('[InteractionMenu] Calling onClose callback');
+                this.onClose();
+            }
+        } catch (error) {
+            console.error('[InteractionMenu] Error during close:', error);
+        }
     }
 
     public isMenuActive(): boolean {

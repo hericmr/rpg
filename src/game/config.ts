@@ -9,18 +9,18 @@ import { GBC_COLORS } from './config/colors';
 export const gameConfig: Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: 'game-container',
-  width: 360,
-  height: 246,
+  width: 640,
+  height: 480,
   pixelArt: true,
   backgroundColor: GBC_COLORS.BG_DARK,
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
-    width: 360,
-    height: 240,
+    width: 640,
+    height: 480,
     min: {
-      width: 200,
-      height: 150
+      width: 320,
+      height: 240
     }
   },
   physics: {

@@ -3,6 +3,7 @@ import { DialogBox } from '../components/DialogBox';
 import { InteractionMenu } from '../components/InteractionMenu';
 import { ESTADOS_DISPOSITIVOS, MUSICAS_REVOLUCIONARIAS, MENSAGENS_CONQUISTA, SongInfo } from '../config/estadosTransitorios';
 import GameState, { JBLDeviceState, ComputerDeviceState, MusicState } from '../state/GameState';
+import { PlayerController } from './PlayerController';
 
 export interface InteractionPoint {
     x: number;
@@ -29,10 +30,15 @@ export default class InteractionController {
     private currentInteractionPoint: InteractionPoint | null = null;
     private gameState: GameState;
     private isInitialized: boolean = false;
+    private playerController: PlayerController | null = null;
 
     constructor(scene: Scene) {
         this.scene = scene;
         this.gameState = GameState.getInstance();
+    }
+
+    public setPlayerController(playerController: PlayerController): void {
+        this.playerController = playerController;
     }
 
     private get jblState(): JBLDeviceState {
@@ -149,12 +155,16 @@ export default class InteractionController {
     }
 
     private showInteractionMenu(point: InteractionPoint): void {
+        console.log('[InteractionController] Attempting to show menu for point:', point.type);
+        
         if (this.currentMenu) {
+            console.log('[InteractionController] Closing existing menu before showing new one');
             this.currentMenu.close();
         }
 
         this.currentInteractionPoint = point;
         this.isInteracting = true;
+        this.playerController?.setDialogActive(true);
 
         const options = [
             {
@@ -278,29 +288,11 @@ export default class InteractionController {
         }
 
         // Opções comuns
-        options.push(
-            {
-                icon: '👄',
-                label: 'Falar',
-                onSelect: () => this.handleTalk(point)
-            },
-            {
-                icon: '🚪',
-                label: 'Sair',
-                onSelect: () => {
-                    if (this.currentMenu) {
-                        this.currentMenu.close();
-                        this.currentMenu = null;
-                    }
-                    if (this.currentDialog) {
-                        this.currentDialog.close();
-                        this.currentDialog = null;
-                    }
-                    this.isInteracting = false;
-                    this.currentInteractionPoint = null;
-                }
-            }
-        );
+        options.push({
+            icon: '👄',
+            label: 'Falar',
+            onSelect: () => this.handleTalk(point)
+        });
 
         let title = '';
         switch (point.type) {
@@ -321,8 +313,11 @@ export default class InteractionController {
             options,
             title,
             onClose: () => {
+                console.log('[InteractionController] Menu onClose callback triggered');
                 this.isInteracting = false;
                 this.currentMenu = null;
+                this.currentInteractionPoint = null;
+                this.playerController?.setDialogActive(false);
             }
         });
     }
@@ -720,10 +715,11 @@ export default class InteractionController {
                     npcController.wakeUpAngry();
                     // Mostrar mensagem do NPC acordando
                     this.scene.time.delayedCall(500, () => {
-                        this.showDialog('💢 O QUE É ISSO?! QUEM OUSA PERTURBAR MEU SONO?!', {
+                        this.showDialog('💢 O QUE É ISSO?!  que barulho é esse!!!! QUEM OUSA PERTURBAR MEU SONO?!', {
                             dialogColor: 0xff0000,
                             autoClose: true,
-                            name: 'Guarda'
+                            name: 'dr lion',
+                            portrait: 'dr_lion'
                         });
                     });
                 }
@@ -795,18 +791,31 @@ export default class InteractionController {
             onClose?: () => void;
         } = {}
     ): void {
-        // Fecha o menu antes de mostrar o diálogo
+        console.log('[InteractionController] Showing dialog:', message);
+        
+        // Se houver um menu ativo, fechamos ele
         if (this.currentMenu) {
+            console.log('[InteractionController] Closing current menu before showing dialog');
             this.currentMenu.close();
             this.currentMenu = null;
         }
 
-        // Fecha o diálogo anterior se existir
+        // Se houver um diálogo ativo, fechamos ele
         if (this.currentDialog) {
+            console.log('[InteractionController] Closing current dialog');
             this.currentDialog.close();
+            this.currentDialog = null;
         }
 
-        console.log('[InteractionController] Abrindo diálogo:', message);
+        // Se a mensagem estiver vazia, apenas limpamos os diálogos
+        if (!message) {
+            console.log('[InteractionController] Empty message, just cleaning up');
+            return;
+        }
+
+        this.isInteracting = true;
+        this.playerController?.setDialogActive(true);
+
         const screenWidth = this.scene.cameras.main.width;
         const screenHeight = this.scene.cameras.main.height;
 
@@ -824,23 +833,33 @@ export default class InteractionController {
             autoClose: options.autoClose,
             noMenuReturn: options.noMenuReturn,
             onClose: () => {
+                console.log('[InteractionController] Dialog closed');
                 this.isInteracting = false;
                 this.currentDialog = null;
-                console.log('[InteractionController] Diálogo fechado.');
+                this.playerController?.setDialogActive(false);
 
-                // Execute custom onClose if provided
                 if (options.onClose) {
                     options.onClose();
                 }
 
-                // Return to menu if appropriate
-                if (!options.autoClose && !options.noMenuReturn && this.currentInteractionPoint) {
+                // Só reabrimos o menu se:
+                // 1. Não for autoClose
+                // 2. Não for noMenuReturn
+                // 3. Tivermos um ponto de interação
+                // 4. Não estivermos no processo de sair (menu é null)
+                if (!options.autoClose && 
+                    !options.noMenuReturn && 
+                    this.currentInteractionPoint && 
+                    this.currentMenu === null && 
+                    this.isInteracting) {
+                    console.log('[InteractionController] Reopening menu after dialog');
                     this.showInteractionMenu(this.currentInteractionPoint);
+                } else {
+                    console.log('[InteractionController] Not reopening menu - conditions not met');
                 }
             }
         });
 
-        // Garante que o diálogo apareça por cima com uma profundidade alta
         if (this.currentDialog) {
             this.scene.children.bringToTop(this.currentDialog as any);
         }

@@ -25,16 +25,16 @@ export default class VideoScene extends Scene {
         
         // Calcular dimensões do vídeo mantendo a proporção
         const videoAspectRatio = 16 / 9; // Assumindo proporção 16:9
-        let videoWidth = screenWidth * 0.8;
+        let videoWidth = screenWidth * 0.95; // Aumentado para 95% da largura da tela
         let videoHeight = videoWidth / videoAspectRatio;
         
         // Ajustar se a altura for muito grande
-        if (videoHeight > screenHeight * 0.8) {
-            videoHeight = screenHeight * 0.8;
+        if (videoHeight > screenHeight * 0.95) { // Aumentado para 95% da altura da tela
+            videoHeight = screenHeight * 0.95;
             videoWidth = videoHeight * videoAspectRatio;
         }
         
-        // Aplicar dimensões e configurações de renderização
+        // Aplicar dimensões e configurações de renderização aprimoradas
         this.video.setDisplaySize(videoWidth, videoHeight);
         this.video.setOrigin(0.5);
         this.video.setPipeline('TextureTintPipeline');
@@ -98,11 +98,11 @@ export default class VideoScene extends Scene {
         
         // Recalcular dimensões do vídeo
         const videoAspectRatio = 16 / 9;
-        let videoWidth = newWidth * 0.8;
+        let videoWidth = newWidth * 0.95; // Aumentado para 95% da largura da tela
         let videoHeight = videoWidth / videoAspectRatio;
         
-        if (videoHeight > newHeight * 0.8) {
-            videoHeight = newHeight * 0.8;
+        if (videoHeight > newHeight * 0.95) { // Aumentado para 95% da altura da tela
+            videoHeight = newHeight * 0.95;
             videoWidth = videoHeight * videoAspectRatio;
         }
         

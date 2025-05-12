@@ -32,20 +32,19 @@ export interface NPC {
   };
 }
 
-export abstract class BaseScene extends Scene {
+export class BaseScene extends Scene {
   protected playerController!: PlayerController;
-  protected npcController: NPCController;
-  protected interactionController: InteractionController;
+  protected npcController!: NPCController;
+  protected interactionController!: InteractionController;
   protected dialogActive: boolean = false;
 
   constructor(config: string | Phaser.Types.Scenes.SettingsConfig) {
     super(config);
-    this.npcController = new NPCController(this);
     this.interactionController = new InteractionController(this);
+    this.npcController = new NPCController(this);
   }
 
   create(): void {
-    // Try to initialize the interaction controller
     this.tryInitializeInteractionController();
   }
 
@@ -68,10 +67,13 @@ export abstract class BaseScene extends Scene {
     clearance?: string;
   }): void {
     this.playerController = new PlayerController(this, config);
+    // Connect the controllers
+    this.interactionController.setPlayerController(this.playerController);
   }
 
   protected setupNPCs(): void {
-    this.npcController = new NPCController(this);
+    // NPCController is already initialized in constructor
+    // Child classes should override this method to add specific NPCs
   }
 
   protected setupInteractions(): void {
