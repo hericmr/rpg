@@ -1,5 +1,3 @@
-import { GBC_COLORS } from '../config/colors';
-
 export class GBPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline {
     constructor(game: Phaser.Game) {
         super({

@@ -18,7 +18,7 @@ export const MENSAGENS_CONQUISTA = {
     computerOn: "💀 Computador QUANTICO LIGADO!!!",
     computerHacked: "💀 Sistema hackeado!!",
     connected: "💀 JBL PAREADA COM O COMPUTADOR!!! Pronta para tocar música!",
-    musicPlaying: "\U0001f3b5 TOCANDO *Lésbica Futurista*! AS PAREDES TREMEEM"
+    musicPlaying: "🎵 TOCANDO *Lésbica Futurista*! AS PAREDES TREMEEM"
 };
 
 export const ESTADOS_DISPOSITIVOS = {

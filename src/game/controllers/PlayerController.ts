@@ -1,4 +1,4 @@
-import { Scene, Physics, Input } from 'phaser';
+import { Scene, Input } from 'phaser';
 
 interface Player {
     sprite: Phaser.Physics.Arcade.Sprite;

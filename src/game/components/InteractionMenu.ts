@@ -51,7 +51,7 @@ export class InteractionMenu {
             config.y,
             300,
             100,
-            0x1a237e // Azul igual ao DialogBox
+            0x0d1642 // Azul igual ao DialogBox
         );
         this.background.setAlpha(0.99);
         this.background.setScrollFactor(0);

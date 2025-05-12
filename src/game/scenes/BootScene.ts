@@ -3,16 +3,17 @@ import { Scene, GameObjects } from 'phaser';
 export default class BootScene extends Scene {
     private morphingSprite!: GameObjects.Sprite;
     private copyrightText!: GameObjects.Text;
+    private glitchOverlay!: GameObjects.Image;
 
     private readonly FPS = 24;
     private readonly FRAME_HOLD = 3 * this.FPS;
     private readonly publicUrl = process.env.PUBLIC_URL || '';
 
     // Constantes de tempo para clareza
-    private readonly INTRO_TWEEN_DURATION = 2000;
+    private readonly INTRO_TWEEN_DURATION = 1500;
     private readonly COPYRIGHT_FADE_DELAY = 5000;
-    private readonly LOOP_START_DELAY = 9000;
-    private readonly SCALE_ANIM_DURATION = 7000;
+    private readonly LOOP_START_DELAY = 8000;
+    private readonly SCALE_ANIM_DURATION = 6000;
 
     constructor() {
         super({ key: 'BootScene' });
@@ -20,13 +21,14 @@ export default class BootScene extends Scene {
 
     preload(): void {
         this.load.image('menu', this.assetPath('menu.png'));
-        this.load.audio('msc', this.assetPath('assets_msc.wav'));
+        this.load.audio('msc', this.assetPath('eletronic.ogg'));
+
         this.loadFrameSequence(0, 49);
     }
 
     create(): void {
         this.setupCamera();
-        this.startMusic();
+        this.playMusic();
         this.createMorphingSprite();
         this.createAnimations();
         this.createCopyrightText();
@@ -47,12 +49,12 @@ export default class BootScene extends Scene {
     }
 
     private setupCamera(): void {
-        this.cameras.main.setBackgroundColor('#000');
-        this.cameras.main.fadeIn(1000, 0, 0, 0);
+        this.cameras.main.setBackgroundColor('#01010f'); // tom escuro azulado
+        this.cameras.main.flash(300, 255, 0, 255); // flash inicial tipo boot
     }
 
-    private startMusic(): void {
-        this.sound.play('msc', { volume: 0.1, loop: true });
+    private playMusic(): void {
+        this.sound.play('msc', { volume: 0.15, loop: true });
     }
 
     private loadFrameSequence(start: number, end: number): void {
@@ -63,19 +65,13 @@ export default class BootScene extends Scene {
     }
 
     private generateFrames(start: number, end: number): { key: string }[] {
-        return Array.from({ length: end - start + 1 }, (_, i) => {
-            const frame = (i + start).toString().padStart(3, '0');
-            return { key: `frame_${frame}` };
-        });
+        return Array.from({ length: end - start + 1 }, (_, i) => ({
+            key: `frame_${(i + start).toString().padStart(3, '0')}`
+        }));
     }
 
     private createAnimation(key: string, frames: { key: string }[], repeat: number): void {
-        this.anims.create({
-            key,
-            frames,
-            frameRate: this.FPS,
-            repeat
-        });
+        this.anims.create({ key, frames, frameRate: this.FPS, repeat });
     }
 
     // === Criação de elementos ===
@@ -89,6 +85,11 @@ export default class BootScene extends Scene {
         this.morphingSprite.setAlpha(0);
         this.morphingSprite.setScale(0.3);
     }
+
+
+
+        
+
 
     private createAnimations(): void {
         this.createAnimation('morph', [
@@ -106,12 +107,12 @@ export default class BootScene extends Scene {
     private createCopyrightText(): void {
         this.copyrightText = this.add.text(
             this.scale.width / 2,
-            this.scale.height - 55,
-            'Papai Lion\nIndie Games\n\nTODOS OS DIREITOS RESERVADOS',
+            this.scale.height - 40,
+            '>> PAPAI LION INDIE GAMES <<\n[SapphicOS v0.9 booting...]\n\n© TODOS OS DIREITOS RESERVADOS',
             {
-                fontFamily: 'monospace',
-                fontSize: '8px',
-                color: '#FFFFFF',
+                fontFamily: 'Courier New',
+                fontSize: '10px',
+                color: '#FF00FF',
                 align: 'center'
             }
         ).setOrigin(0.5).setAlpha(0);
@@ -140,7 +141,7 @@ export default class BootScene extends Scene {
     private animateMorphingSprite(): void {
         this.tweens.add({
             targets: this.morphingSprite,
-            scale: 0.35,
+            scale: 0.38,
             duration: this.SCALE_ANIM_DURATION,
             ease: 'Sine.easeInOut'
         });
@@ -151,22 +152,23 @@ export default class BootScene extends Scene {
             targets: this.copyrightText,
             alpha: 1,
             duration: 1000,
-            delay: 1000
+            delay: 1200
         });
 
         this.tweens.add({
             targets: this.copyrightText,
             alpha: { from: 0.4, to: 1 },
-            yoyo: true,
+            duration: 800,
             repeat: -1,
-            duration: 1000,
+            yoyo: true,
+            ease: 'Sine.easeInOut',
             delay: 2500
         });
 
         this.tweens.add({
-            targets: [this.morphingSprite, this.copyrightText],
+            targets: [this.morphingSprite, this.glitchOverlay, this.copyrightText],
             alpha: 0,
-            duration: 2000,
+            duration: 1500,
             delay: this.COPYRIGHT_FADE_DELAY
         });
 

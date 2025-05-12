@@ -1,5 +1,3 @@
-import { GBC_COLORS } from '../config/colors';
-
 export class GBEffect {
     private scene: Phaser.Scene;
     private renderTexture!: Phaser.GameObjects.RenderTexture;

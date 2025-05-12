@@ -217,9 +217,9 @@ export class NPCController {
             height: 120,
             dialog,
             portrait: options.portrait,
-            portraitScale: options.portraitScale || 0.5, // Default to scale 2
+            portraitScale: options.portraitScale || 0.5,
             name: options.name,
-            dialogColor: options.color ?? 0xe43675,
+            dialogColor: options.color ?? 0x0d1642,
             textColor: '#FFFFFF',
             onClose: () => {
                 this.dialogActive = false;

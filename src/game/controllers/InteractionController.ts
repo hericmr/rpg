@@ -338,7 +338,7 @@ export default class InteractionController {
             this.computerState.state = 'off';
             this.stopMusic();
             this.showDialog('O computador foi desligado com segurança.', {
-                dialogColor: 0x1a237e,
+                dialogColor: 0x0d1642,
                 autoClose: true
             });
         } else if (point.type === 'jbl') {
@@ -347,7 +347,7 @@ export default class InteractionController {
             this.jblState.state = 'off';
             this.stopMusic();
             this.showDialog('A JBL foi desligada.', {
-                dialogColor: 0x1a237e,
+                dialogColor: 0x0d1642,
                 autoClose: true
             });
         }
@@ -362,13 +362,13 @@ export default class InteractionController {
             {
                 label: '📝 manifesto_lesbico.txt',
                 onSelect: () => this.showDialog('Um manifesto poético sobre a revolução lésbica digital.', {
-                    dialogColor: 0xff1493
+                    dialogColor: 0x0d1642
                 })
             },
             {
                 label: '🌈 fotos_pride.zip',
                 onSelect: () => this.showDialog('Uma coleção de fotos de paradas do orgulho LGBTQIA+.', {
-                    dialogColor: 0xff1493
+                    dialogColor: 0x0d1642
                 })
             },
             {
@@ -378,7 +378,7 @@ export default class InteractionController {
         ];
 
         this.showDialog('Arquivos do Sistema:', {
-            dialogColor: 0x9400d3,
+            dialogColor: 0x0d1642,
             options
         });
     }
@@ -404,7 +404,7 @@ export default class InteractionController {
         ];
 
         this.showDialog('Controle de Volume:', {
-            dialogColor: 0x9400d3,
+            dialogColor: 0x0d1642,
             options
         });
     }
@@ -413,7 +413,7 @@ export default class InteractionController {
         if (this.currentMusic) {
             (this.currentMusic as any).volume = volume;
             this.showDialog(`Volume ajustado para ${Math.round(volume * 100)}%`, {
-                dialogColor: 0x9400d3,
+                dialogColor: 0x0d1642,
                 autoClose: true
             });
         }
@@ -425,7 +425,7 @@ export default class InteractionController {
         if (point.type === 'jbl') {
             const message = ESTADOS_DISPOSITIVOS.jbl[this.jblState.state].look;
             this.showDialog(message, {
-                dialogColor: 0x9400d3
+                dialogColor: 0x0d1642
             });
             return;
         }
@@ -433,7 +433,7 @@ export default class InteractionController {
         if (point.type === 'computador') {
             const message = ESTADOS_DISPOSITIVOS.computer[this.computerState.state].look;
             this.showDialog(message, {
-                dialogColor: 0x9400d3
+                dialogColor: 0x0d1642
             });
             return;
         }
@@ -498,7 +498,7 @@ export default class InteractionController {
 
     private showPasswordPrompt(): void {
         this.showDialog('Digite a senha para desbloquear o sistema:', {
-            dialogColor: 0x9400d3,
+            dialogColor: 0x0d1642,
             options: [
                 {
                     label: 'Digitar senha: sapphic_future_2025',
@@ -525,7 +525,7 @@ export default class InteractionController {
         if (point.type === 'jbl') {
             const message = ESTADOS_DISPOSITIVOS.jbl[this.jblState.state].talk;
             this.showDialog(message, {
-                dialogColor: 0x9400d3
+                dialogColor: 0x0d1642
             });
             return;
         }
@@ -533,7 +533,7 @@ export default class InteractionController {
         if (point.type === 'computador') {
             const message = ESTADOS_DISPOSITIVOS.computer[this.computerState.state].talk;
             this.showDialog(message, {
-                dialogColor: 0x9400d3
+                dialogColor: 0x0d1642
             });
             return;
         }
@@ -641,14 +641,14 @@ export default class InteractionController {
                 onSelect: () => {
                 this.handlePlayMusic(song);
                 this.showDialog(song.description, {
-                    dialogColor: 0x9400d3,
+                    dialogColor: 0x0d1642,
                     autoClose: true
                 });
                 }
         }));
 
         this.showDialog('Escolha uma música para tocar:', {
-            dialogColor: 0x9400d3,
+            dialogColor: 0x0d1642,
             options
         });
     }
@@ -705,7 +705,7 @@ export default class InteractionController {
         // Mostra mensagem temática de música tocando
         this.showDialog(ESTADOS_DISPOSITIVOS.jbl.playing.look + "\n\n" + 
                        `🎧 Tocando agora: ${song.title} por ${song.artist}\n${song.description}`, {
-            dialogColor: 0xff1493,
+            dialogColor: 0x0d1642,
             autoClose: true,
             noMenuReturn: true,
             onClose: () => {
@@ -716,7 +716,7 @@ export default class InteractionController {
                     // Mostrar mensagem do NPC acordando
                     this.scene.time.delayedCall(500, () => {
                         this.showDialog('💢 O QUE É ISSO?!  que barulho é esse!!!! QUEM OUSA PERTURBAR MEU SONO?!', {
-                            dialogColor: 0xff0000,
+                            dialogColor: 0x0d1642,
                             autoClose: true,
                             name: 'dr lion',
                             portrait: 'dr_lion'
@@ -828,7 +828,7 @@ export default class InteractionController {
             dialog: message,
             portrait: options.portrait || 'player_portrait',
             name: options.name || 'Você',
-            dialogColor: options.dialogColor || 0x1a237e,
+            dialogColor: options.dialogColor || 0x0d1642,
             options: options.options,
             autoClose: options.autoClose,
             noMenuReturn: options.noMenuReturn,

@@ -45,7 +45,7 @@ export class DialogBox {
     this.onClose = config.onClose;
 
     // Definir cores padrão
-    const dialogColor = config.dialogColor || 0x1a237e;
+    const dialogColor = config.dialogColor || 0x0d1642;
     const textColor = config.textColor || '#FFFFFF';
 
     // Ajustar posição Y para ficar na parte inferior
@@ -92,7 +92,7 @@ export class DialogBox {
         adjustedY,
         config.portrait
       );
-      this.portrait.setScale(config.portraitScale || 1);
+      this.portrait.setScale(config.portraitScale || 2);
       this.portrait.setScrollFactor(0);
       this.portrait.setDepth(202);
     }

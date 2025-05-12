@@ -151,7 +151,7 @@ export default class GameScene extends BaseScene {
         width: this.cameras.main.width * 1,
         height: 80,
         dialog: "\nVocê acorda com uma dor de cabeça\nlancinante e amnésia, não se\nlembra de nada que aconteceu\n no dia anterior...",
-        dialogColor: 0x1a237e, // Cor azul
+        dialogColor: 0x0d1642, // Cor azul
         portrait: 'heric',
         portraitScale: 3,
         autoClose: false

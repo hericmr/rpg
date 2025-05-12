@@ -1,7 +1,6 @@
-import { Scene, GameObjects, Physics, Input } from 'phaser';
+import { GameObjects, Physics, Input } from 'phaser';
 import { GBPipeline } from '../effects/GBPipeline';
 import { GBEffect } from '../effects/GBEffect';
-import { DialogBox } from '../components/DialogBox';
 import { BaseScene } from './BaseScene';
 import { InteractionPoint } from '../controllers/InteractionController';
 
