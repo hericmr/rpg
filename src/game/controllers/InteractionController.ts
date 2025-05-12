@@ -24,6 +24,9 @@ export default class InteractionController {
     private currentDialog: DialogBox | null = null;
     private currentMenu: InteractionMenu | null = null;
     private spaceKey: Phaser.Input.Keyboard.Key | null = null;
+    private enterKey: Phaser.Input.Keyboard.Key | null = null;
+    private backspaceKey: Phaser.Input.Keyboard.Key | null = null;
+    private escapeKey: Phaser.Input.Keyboard.Key | null = null;
     private isInteracting: boolean = false;
     private readonly interactionDistance: number = 50;
     private currentMusic: Phaser.Sound.BaseSound | null = null;
@@ -31,6 +34,8 @@ export default class InteractionController {
     private gameState: GameState;
     private isInitialized: boolean = false;
     private playerController: PlayerController | null = null;
+    private currentPasswordInput: string = '';
+    private isEnteringPassword: boolean = false;
 
     constructor(scene: Scene) {
         this.scene = scene;
@@ -84,6 +89,9 @@ export default class InteractionController {
         }
 
         this.spaceKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.enterKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+        this.backspaceKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.BACKSPACE);
+        this.escapeKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
         
         // Configurar listener para a tecla espaço
         this.spaceKey.on('down', () => {
@@ -106,7 +114,7 @@ export default class InteractionController {
             const playerY = player.y;
 
             const nearbyPoint = this.interactionPoints.find(point => {
-            const distance = Phaser.Math.Distance.Between(
+                const distance = Phaser.Math.Distance.Between(
                     playerX, playerY,
                     point.x, point.y
                 );
@@ -497,19 +505,66 @@ export default class InteractionController {
     }
 
     private showPasswordPrompt(): void {
-        this.showDialog('Digite a senha para desbloquear o sistema:', {
-            dialogColor: 0x0d1642,
-            options: [
-                {
-                    label: 'Digitar senha: sapphic_future_2025',
-                    onSelect: () => this.handlePasswordInput('sapphic_future_2025')
-                },
-                {
-                    label: 'Cancelar',
-                    onSelect: () => this.showInteractionMenu(this.currentInteractionPoint!)
-                }
-            ]
+        this.isEnteringPassword = true;
+        this.currentPasswordInput = '';
+        
+        // Setup keyboard input for password
+        const keyboard = this.scene.input.keyboard;
+        if (!keyboard) return;
+
+        // Add keyboard listener for characters
+        keyboard.on('keydown', (event: KeyboardEvent) => {
+            if (!this.isEnteringPassword) return;
+            
+            if (event.key.length === 1) {
+                this.currentPasswordInput += event.key;
+                this.updatePasswordDialog();
+            }
         });
+
+        // Setup enter key for submission
+        this.enterKey?.on('down', () => {
+            if (this.isEnteringPassword) {
+                this.handlePasswordInput(this.currentPasswordInput);
+                this.cleanupPasswordInput();
+            }
+        });
+
+        // Setup backspace for deletion
+        this.backspaceKey?.on('down', () => {
+            if (this.isEnteringPassword) {
+                this.currentPasswordInput = this.currentPasswordInput.slice(0, -1);
+                this.updatePasswordDialog();
+            }
+        });
+
+        // Setup escape to cancel
+        this.escapeKey?.on('down', () => {
+            if (this.isEnteringPassword) {
+                this.cleanupPasswordInput();
+                this.showInteractionMenu(this.currentInteractionPoint!);
+            }
+        });
+
+        this.updatePasswordDialog();
+    }
+
+    private updatePasswordDialog(): void {
+        const maskedPassword = '*'.repeat(this.currentPasswordInput.length);
+        this.showDialog(`Digite a senha para desbloquear o sistema:\n\n${maskedPassword}\n\n[ENTER] Confirmar | [ESC] Cancelar`, {
+            dialogColor: 0x0d1642
+        });
+    }
+
+    private cleanupPasswordInput(): void {
+        this.isEnteringPassword = false;
+        this.currentPasswordInput = '';
+        
+        // Remove keyboard listeners
+        const keyboard = this.scene.input.keyboard;
+        if (keyboard) {
+            keyboard.removeAllListeners('keydown');
+        }
     }
 
     private handlePasswordInput(input: string): void {
@@ -517,6 +572,7 @@ export default class InteractionController {
         this.showDialog('Senha incorreta. Tente novamente ou... talvez um método mais direto?', {
             dialogColor: 0xff0000
         });
+        this.cleanupPasswordInput();
     }
 
     private handleTalk(point: InteractionPoint): void {

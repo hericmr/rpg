@@ -108,7 +108,7 @@ export default class BootScene extends Scene {
         this.copyrightText = this.add.text(
             this.scale.width / 2,
             this.scale.height - 40,
-            '>> PAPAI LION INDIE GAMES <<\n[SapphicOS v0.9 booting...]\n\n© TODOS OS DIREITOS RESERVADOS',
+            '>> PAPAI LION INDIE GAMES <<\n\n\n© TODOS OS DIREITOS RESERVADOS',
             {
                 fontFamily: 'Courier New',
                 fontSize: '10px',

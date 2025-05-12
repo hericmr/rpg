@@ -39,7 +39,7 @@ export default class MenuScene extends Scene {
 
         this.scanline = this.add.rectangle(0, 0, screenWidth, 1, 0x00ff00, 0.3).setOrigin(0, 0);
         const scanlineGlow = this.add.rectangle(0, 0, screenWidth, 2, 0x00ff00, 0.2).setOrigin(0, 0);
-
+        
         this.tweens.add({
             targets: [this.scanline, scanlineGlow],
             y: screenHeight,
@@ -90,7 +90,7 @@ export default class MenuScene extends Scene {
             });
         });
 
-        this.createButton();
+            this.createButton();
 
         this.startText = this.add.text(screenWidth / 2, screenHeight * 0.95, 'APERTE ESPAÇO', {
             fontSize: '8px',
@@ -102,7 +102,7 @@ export default class MenuScene extends Scene {
             fixedHeight: 12,
             align: 'center'
         }).setOrigin(0.5).setAlpha(0);
-
+        
         this.tweens.add({
             targets: this.startText,
             alpha: { from: 0, to: 1 },
@@ -114,16 +114,16 @@ export default class MenuScene extends Scene {
         this.input.keyboard?.on('keydown-SPACE', () => {
             this.transitionToNextScene();
         });
-
+        
         this.scale.on('resize', this.handleResize, this);
     }
 
     private createButton(): void {
         const screenWidth = this.cameras.main.width;
         const screenHeight = this.cameras.main.height;
-
+        
         this.button = this.add.image(screenWidth / 2, screenHeight * 0.85, 'button').setScale(0.5).setAlpha(0).setInteractive({ useHandCursor: true });
-
+        
         const glow = this.add.graphics();
         const drawGlow = () => {
             glow.clear();
@@ -138,7 +138,7 @@ export default class MenuScene extends Scene {
         };
         drawGlow();
         glow.setAlpha(0.4);
-
+        
         this.tweens.add({ targets: this.button, alpha: 1, duration: 600, ease: 'Sine.easeIn' });
 
         this.button.on('pointerover', () => {
@@ -151,7 +151,7 @@ export default class MenuScene extends Scene {
                 onUpdate: drawGlow
             });
         });
-
+        
         this.button.on('pointerout', () => {
             this.tweens.add({
                 targets: [this.button, glow],
@@ -168,32 +168,32 @@ export default class MenuScene extends Scene {
             this.transitionToNextScene();
         });
     }
-
+            
     private transitionToNextScene(): void {
-        this.cameras.main.flash(500, 255, 255, 0);
-
+            this.cameras.main.flash(500, 255, 255, 0);
+            
         const screenWidth = this.cameras.main.width;
         const screenHeight = this.cameras.main.height;
 
         for (let i = 0; i < 5; i++) {
             this.time.delayedCall(i * 100, () => {
-                this.button.setPosition(
-                    screenWidth / 2 + (Math.random() - 0.5) * 2,
-                    screenHeight * 0.85 + (Math.random() - 0.5) * 2
-                );
-            });
-        }
-
-        this.tweens.add({
-            targets: [this.background, this.title, this.button, this.startText, this.character, this.xumbro],
-            alpha: 0,
-            duration: 500,
-            ease: 'Power2',
-            onComplete: () => {
-                this.menuMusic?.stop();
-                this.scene.start('VideoScene');
+                    this.button.setPosition(
+                        screenWidth / 2 + (Math.random() - 0.5) * 2,
+                        screenHeight * 0.85 + (Math.random() - 0.5) * 2
+                    );
+                });
             }
-        });
+            
+            this.tweens.add({
+                targets: [this.background, this.title, this.button, this.startText, this.character, this.xumbro],
+                alpha: 0,
+                duration: 500,
+                ease: 'Power2',
+                onComplete: () => {
+                    this.menuMusic?.stop();
+                    this.scene.start('VideoScene');
+                }
+            });
     }
 
     private animateYearCounter(): void {
@@ -224,7 +224,7 @@ export default class MenuScene extends Scene {
         };
 
         update();
-    }
+            }
 
     private handleResize(): void {
         if (!this.isActive || !this.cameras?.main) return;
