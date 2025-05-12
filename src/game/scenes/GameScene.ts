@@ -147,14 +147,16 @@ export default class GameScene extends BaseScene {
       new DialogBox({
         scene: this,
         x: this.cameras.main.width / 2,
-        y: this.cameras.main.height - 60,
-        width: this.cameras.main.width * 1,
-        height: 80,
-        dialog: "\nVocê acorda com uma dor de cabeça\nlancinante e amnésia, não se\nlembra de nada que aconteceu\n no dia anterior...",
-        dialogColor: 0x0d1642, // Cor azul
-        portrait: 'heric',
-        portraitScale: 3,
-        autoClose: false
+        y: this.cameras.main.height - 90,
+        width: this.cameras.main.width * 0.9,
+        height: 120,
+        dialog: "Você acorda com uma dor de cabeça lancinante e amnésia, não se lembra de nada que aconteceu no dia anterior...",
+        dialogColor: 0x0d1642,
+        portrait: 'player_portrait',
+        name: 'Você',
+        portraitScale: 2,
+        textColor: '#FFFFFF',
+        autoClose: true
       });
     }
   }

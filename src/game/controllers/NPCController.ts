@@ -118,10 +118,10 @@ export class NPCController {
                     console.log('[NPCController] Opção "Olhar" selecionada para:', config.name);
                     this.currentMenu?.close();
                     this.showDialog(`\nVocê observa ${config.name}. que está dormindo profundamente... \nlembra muito o Snorlax naquele outro jogo.`, {
-                        portrait: config.spriteKey === 'lion' ? 'lionface' : undefined,
-                        name: config.name,
-                        color: 0xe43675,
-                        portraitScale: 0.5
+                        color: 0x0d1642,
+                        portrait: 'heric',
+                        name: 'Você',
+                        portraitScale: 2
                     });
                 }
             },
@@ -132,10 +132,10 @@ export class NPCController {
                     console.log('[NPCController] Opção "Falar" selecionada para:', config.name);
                     this.currentMenu?.close();
                     this.showDialog('\nNão dá pra falar com ele, esta dormindo como uma pedra', {
-                        portrait: config.spriteKey === 'lion' ? 'lionface' : undefined,
-                        name: config.name,
-                        color: 0xe43675,
-                        portraitScale: 0.5
+                        color: 0x0d1642,
+                        portrait: 'heric',
+                        name: 'Você',
+                        portraitScale: 2
                     });
                 }
             },
@@ -146,10 +146,10 @@ export class NPCController {
                     console.log('[NPCController] Opção "Bater" selecionada para:', config.name);
                     this.currentMenu?.close();
                     this.showDialog(`\nnão vou bater no ${config.name}. Ele é meu amigo.`, {
-                        portrait: config.spriteKey === 'lion' ? 'lionface' : undefined,
-                        name: config.name,
-                        color: 0xe43675,
-                        portraitScale: 0.5
+                        portrait: 'heric',
+                        name: 'Você',
+                        color: 0x0d1642,
+                        portraitScale: 2
                     });
                 }
             },
@@ -160,10 +160,10 @@ export class NPCController {
                     console.log('[NPCController] Opção "Chutar" selecionada para:', config.name);
                     this.currentMenu?.close();
                     this.showDialog(`\nVocê considera chutar ${config.name}, mas desiste no último momento. \n Afinal, ele é seu amigo...`, {
-                        portrait: config.spriteKey === 'lion' ? 'lionface' : undefined,
-                        name: config.name,
-                        color: 0xe43675,
-                        portraitScale: 0.5
+                        portrait: 'heric',
+                        name: 'Você',
+                        color: 0x0d1642,
+                        portraitScale: 2
                     });
                 }
             },
@@ -199,6 +199,7 @@ export class NPCController {
             name?: string;
             color?: number;
             portraitScale?: number;
+            autoClose?: boolean;
         } = {}
     ): void {
         if (this.dialogActive) return;
@@ -208,17 +209,18 @@ export class NPCController {
         const screenHeight = this.scene.cameras.main.height;
         const x = screenWidth / 2;
         const y = screenHeight - 90;
+        const width = screenWidth * 0.9;
 
         this.currentDialog = new DialogBox({
             scene: this.scene,
             x,
             y,
-            width: screenWidth * 1,
+            width,
             height: 120,
             dialog,
-            portrait: options.portrait,
-            portraitScale: options.portraitScale || 0.5,
-            name: options.name,
+            portrait: options.portrait || 'player_portrait',
+            portraitScale: options.portraitScale || 2,
+            name: options.name || 'Você',
             dialogColor: options.color ?? 0x0d1642,
             textColor: '#FFFFFF',
             onClose: () => {
@@ -311,19 +313,15 @@ export class NPCController {
         if (lion) {
             // Mostrar diálogo de raiva
             this.showDialog('QUEM OUSOU ME ACORDAR COM ESSA MÚSICA?!?!?!', {
-                portrait: 'lionface',
-                name: 'Leão Executivo',
-                color: 0xff0000,
-                portraitScale: 0.5
+                color: 0x0d1642,
+                autoClose: true
             });
 
             // Após um pequeno delay, mostrar outro diálogo
             this.scene.time.delayedCall(3000, () => {
                 this.showDialog('Espera... essa música... LÉSBICA FUTURISTA?!?! COMO VOCÊ ACHOU ISSO?!', {
-                    portrait: 'lionface',
-                    name: 'Leão Executivo',
-                    color: 0xff0000,
-                    portraitScale: 0.5
+                    color: 0x0d1642,
+                    autoClose: true
                 });
             });
         }

@@ -162,12 +162,29 @@ export default class InteractionController {
         }
     }
 
+    private cleanupInteractionState(): void {
+        this.isInteracting = false;
+        this.currentMenu = null;
+        this.currentInteractionPoint = null;
+        this.playerController?.setDialogActive(false);
+        this.cleanupPasswordInput();
+    }
+
     private showInteractionMenu(point: InteractionPoint): void {
         console.log('[InteractionController] Attempting to show menu for point:', point.type);
         
+        // Limpar estado anterior se existir
         if (this.currentMenu) {
             console.log('[InteractionController] Closing existing menu before showing new one');
             this.currentMenu.close();
+            this.cleanupInteractionState();
+        }
+
+        // Se ainda estiver em diálogo, limpar
+        if (this.currentDialog) {
+            console.log('[InteractionController] Closing existing dialog before showing menu');
+            this.currentDialog.close();
+            this.cleanupInteractionState();
         }
 
         this.currentInteractionPoint = point;
@@ -322,10 +339,7 @@ export default class InteractionController {
             title,
             onClose: () => {
                 console.log('[InteractionController] Menu onClose callback triggered');
-                this.isInteracting = false;
-                this.currentMenu = null;
-                this.currentInteractionPoint = null;
-                this.playerController?.setDialogActive(false);
+                this.cleanupInteractionState();
             }
         });
     }
@@ -557,6 +571,8 @@ export default class InteractionController {
     }
 
     private cleanupPasswordInput(): void {
+        if (!this.isEnteringPassword) return;
+        
         this.isEnteringPassword = false;
         this.currentPasswordInput = '';
         
@@ -771,11 +787,9 @@ export default class InteractionController {
                     npcController.wakeUpAngry();
                     // Mostrar mensagem do NPC acordando
                     this.scene.time.delayedCall(500, () => {
-                        this.showDialog('💢 O QUE É ISSO?!  que barulho é esse!!!! QUEM OUSA PERTURBAR MEU SONO?!', {
+                        this.showDialog('💢 O QUE É ISSO?! que barulho é esse!!!! QUEM OUSA PERTURBAR MEU SONO?!', {
                             dialogColor: 0x0d1642,
-                            autoClose: true,
-                            name: 'dr lion',
-                            portrait: 'dr_lion'
+                            autoClose: true
                         });
                     });
                 }
@@ -866,6 +880,7 @@ export default class InteractionController {
         // Se a mensagem estiver vazia, apenas limpamos os diálogos
         if (!message) {
             console.log('[InteractionController] Empty message, just cleaning up');
+            this.cleanupInteractionState();
             return;
         }
 
@@ -890,10 +905,7 @@ export default class InteractionController {
             noMenuReturn: options.noMenuReturn,
             onClose: () => {
                 console.log('[InteractionController] Dialog closed');
-                this.isInteracting = false;
-                this.currentDialog = null;
-                this.playerController?.setDialogActive(false);
-
+                
                 if (options.onClose) {
                     options.onClose();
                 }
@@ -902,16 +914,15 @@ export default class InteractionController {
                 // 1. Não for autoClose
                 // 2. Não for noMenuReturn
                 // 3. Tivermos um ponto de interação
-                // 4. Não estivermos no processo de sair (menu é null)
+                // 4. Não estivermos no processo de sair
                 if (!options.autoClose && 
                     !options.noMenuReturn && 
-                    this.currentInteractionPoint && 
-                    this.currentMenu === null && 
-                    this.isInteracting) {
+                    this.currentInteractionPoint) {
                     console.log('[InteractionController] Reopening menu after dialog');
                     this.showInteractionMenu(this.currentInteractionPoint);
                 } else {
-                    console.log('[InteractionController] Not reopening menu - conditions not met');
+                    console.log('[InteractionController] Not reopening menu - cleaning up state');
+                    this.cleanupInteractionState();
                 }
             }
         });
