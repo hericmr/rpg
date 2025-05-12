@@ -9,6 +9,10 @@ import { NPCConfig } from '../controllers/NPCController';
 import InteractionController from '../controllers/InteractionController';
 import { DialogBox } from '../components/DialogBox';
 
+interface SceneData {
+  fromVaranda?: boolean;
+}
+
 export default class GameScene extends BaseScene {
   private office: CorporateOffice;
   private gbEffect!: GBEffect;
@@ -38,7 +42,7 @@ export default class GameScene extends BaseScene {
     this.securityLevel = this.office.META_DATA.securityLevel;
   }
 
-  init(data: { fromVaranda?: boolean }): void {
+  init(data: SceneData): void {
     if (data?.fromVaranda) {
         // Wait for the map to be created in the next frame
         this.events.once('create', () => {
@@ -136,19 +140,23 @@ export default class GameScene extends BaseScene {
 
     // Setup event listeners after everything is initialized
     this.setupWindowEvents();
-    // Mostrar diálogo inicial de pensamento
-    new DialogBox({
-      scene: this,
-      x: this.cameras.main.width / 2,
-      y: this.cameras.main.height - 60,
-      width: this.cameras.main.width * 0.9,
-      height: 80,
-      dialog: "\nVocê acorda com uma dor de cabeça lancinante e amnésia, não se lembra de nada que aconteceu no dia anterior...",
-      dialogColor: 0x1a237e, // Cor azul
-      portrait: 'heric',
-      portraitScale: 2,
-      autoClose: false
-    });
+
+    // Mostrar diálogo inicial apenas se não vier da varanda
+    const sceneData = this.scene.settings.data as SceneData;
+    if (!sceneData?.fromVaranda) {
+      new DialogBox({
+        scene: this,
+        x: this.cameras.main.width / 2,
+        y: this.cameras.main.height - 60,
+        width: this.cameras.main.width * 0.9,
+        height: 80,
+        dialog: "\nVocê acorda com uma dor de cabeça\nlancinante e amnésia, não se\nlembra de nada que aconteceu\n no dia anterior...",
+        dialogColor: 0x1a237e, // Cor azul
+        portrait: 'heric',
+        portraitScale: 2,
+        autoClose: false
+      });
+    }
   }
 
   private setupPixelPerfectRendering(): void {
@@ -209,10 +217,17 @@ export default class GameScene extends BaseScene {
 
   private setupPlayerFromMap(map: Phaser.Tilemaps.Tilemap): void {
     let startX = 2 * map.tileWidth;
-    let startY = 2 * map.tileHeight;
+    let startY = map.heightInPixels / 2;
+
+    // Se a cena anterior foi a VarandaScene, posiciona o jogador na extremidade direita
+    const sceneData = this.scene.settings.data as SceneData;
+    const fromVaranda = sceneData?.fromVaranda;
+    if (fromVaranda) {
+      startX = map.widthInPixels - (2 * map.tileWidth); // Duas tiles da borda direita
+    }
 
     const charStartLayer = map.objects.find(layer => layer.name === 'Char_start_place');
-    if (charStartLayer && charStartLayer.objects.length > 0) {
+    if (!fromVaranda && charStartLayer && charStartLayer.objects.length > 0) {
       const spawnPoint = charStartLayer.objects[0];
       if (typeof spawnPoint.x === 'number' && typeof spawnPoint.y === 'number') {
         startX = spawnPoint.x;
@@ -224,8 +239,16 @@ export default class GameScene extends BaseScene {
       startX,
       startY,
       spriteKey: 'player',
-      clearance: 'employee' // Set default clearance for the main game scene
+      clearance: 'employee'
     });
+
+    // Se vier da varanda, vira o personagem para a esquerda
+    if (fromVaranda) {
+      const player = this.playerController.getPlayer();
+      if (player?.sprite) {
+        player.sprite.setFlipX(true);
+      }
+    }
   }
 
   protected setupNPCs(): void {

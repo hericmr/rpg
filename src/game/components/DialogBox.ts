@@ -100,50 +100,54 @@ export class DialogBox {
     // Criar texto do nome
     if (config.name) {
       this.nameText = this.scene.add.text(
-        config.x - (config.width / 2) + (this.portrait ? 80 : 20),
+        config.x + (config.width / 2) - 20,
         adjustedY - (config.height / 2) + 20,
         config.name,
         {
           fontSize: '14px',
           fontFamily: 'monospace',
-          color: textColor
+          color: textColor,
+          align: 'right'
         }
       );
       this.nameText.setScrollFactor(0);
       this.nameText.setDepth(202);
+      this.nameText.setOrigin(1, 0);  // Alinha à direita
     }
 
     // Criar texto do diálogo
     this.text = this.scene.add.text(
-      config.x - (config.width / 2) + (this.portrait ? 80 : 20),
+      config.x + (config.width / 2) - 20,
       adjustedY - 10,
       config.dialog,
       {
         fontSize: '10px',
         fontFamily: 'monospace',
         color: textColor,
-        wordWrap: { width: config.width - (this.portrait ? 100 : 40) }
+        wordWrap: { width: config.width - (this.portrait ? 100 : 40) },
+        align: 'right'
       }
     );
-    this.text.setOrigin(0, 0.5);
+    this.text.setOrigin(1, 0.5);
     this.text.setScrollFactor(0);
     this.text.setDepth(202);
 
     // Se houver opções, criar botões
     if (config.options && config.options.length > 0) {
-      const baseX = config.x - (config.width / 2) + (this.portrait ? 80 : 20);
+      const baseX = config.x + (config.width / 2) - 20;
       const baseY = adjustedY + 20;
       const spacing = 110;
       config.options.forEach((option, idx) => {
         const btn = this.scene.add.text(
-          baseX + idx * spacing,
+          baseX - idx * spacing,
           baseY,
           option.label,
           {
             fontSize: '10px',
             color: '#FFFFFF',
             backgroundColor: '#222',
-            padding: { x: 10, y: 5 }
+            padding: { x: 10, y: 5 },
+            align: 'right'
           }
         ).setInteractive({ useHandCursor: true })
          .on('pointerdown', () => {
@@ -152,6 +156,7 @@ export class DialogBox {
          });
         btn.setScrollFactor(0);
         btn.setDepth(203);
+        btn.setOrigin(1, 0);
         this.optionButtons.push(btn);
       });
     }

@@ -56,40 +56,41 @@ export const ESTADOS_DISPOSITIVOS = {
     },
     computer: {
         off: {
-            look: "\nNotebook quantico velhissimo do ano de 2066, tem um adesiivo escrito USADO POR MIM PROGRAMADO POR DEISE.",
-            use: "\nVocê liga o computador. O logo antigo do SapphicOS pisca na tela.",
-            talk: "\nAs teclas velhas rangem suavemente.",
-            check: "\nSistema operacional SapphicOS versão 2066, última obra-prima de Deise."
+            look: "\nNotebook quântico de guerra, ano 2066. Um adesivo grita: 'USADO POR MIM, PROGRAMADO POR DEISE'.",
+            use: "\nVocê liga o pC o led pisca.",
+            talk: "\nTeclas antigas gemem.",
+            check: "\nSapphicOS 2066. Última obra de Deise, mítica e misteriosa."
         },
         on: {
-            look: "\nA tela exibe um prompt de login retrô. PC brilha sob a luz.",
-            use: "\nSistema pede senha. O computador é meu, mas eu nao consigo lembrar a senha...",
-            talk: "\nO cooler quantico barulhento conta histórias de décadas de uso.",
-            check: "\nLogin protegido. Deise não facilitava para ninguém."
+            look: "\nA tela exibe um prompt retrô, como se esperasse sua alma.",
+            use: "\nEle pede a senha... é meu computador, mas a mente falha, nao lembro a senho...",
+            talk: "\nO cooler canta em ruídos cósmicos.",
+            check: "\nProtegido. Deise não deixava brechas."
         },
         unlocked: {
-            look: "\nInterface do HericOS, cada pixel lembra uma viagem lisergica. alias sera que comemos cogumelos ontem?",
-            use: "\nOs programas antigos ainda rodam perfeitamente.",
-            talk: "\nO sistema responde com aquele delay característico.",
-            check: "\nMeus scripts de hacking estão aqui, todos organizados e documentados."
+            look: "\nA interface do HericOS é uma trip lisérgica. Será que a gente tomou cogumelo ontem?",
+            use: "\nProgramas antigos funcionam como novos. O tempo não passou aqui.",
+            talk: "\nRespostas lentas, mas carregadas de memória.",
+            check: "\nScripts de hacking intactos. Organização de outro mundo."
         },
         hacked: {
-            look: "\nTela cheia de código colorido. Estilo matrix",
-            use: "\nModo administrador ativado. ",
-            talk: "\nEntre os bits, você ouve ecos do além.",
-            check: "\nKernel hackeado!"
+            look: "\nCódigos saltam na tela como se estivessem vivos. Matrix em technicolor.",
+            use: "\nModo administrador: ON. O universo obedece.",
+            talk: "\nEntre os bits, sussurros de outra dimensão.",
+            check: "\nKernel comprometido com estilo."
         },
         paired: {
-            look: "\nO computador está conectado à JBL, interface pulsando em sincronia.",
-            use: "\nSistema de som configurado. Pronto para tocar música!",
-            talk: "\nA conexão com a JBL está perfeita.",
-            check: "\nPareamento concluído. Aguardando comando para iniciar a música."
+            look: "\nO PC pulsa no ritmo da JBL. Um casamento perfeito.",
+            use: "\nSom calibrado. O palco está pronto.",
+            talk: "\nSintonia fina entre passado e presente.",
+            check: "\nPareado. Só falta o som."
         },
         playing: {
-            look: "\nO computador toca Lésbica Futurista através da JBL!!!",
-            use: "\nA música antiga ecoa pelos alto-falantes empoeirados.",
-            talk: "\nA música faz o notebook vibrar como nos velhos tempos.",
-            check: "\nReproduzindo Lésbica Futurista na JBL. Volume e qualidade máximos!"
+            look: "\nO computador libera Lésbica Futurista na JBL. O tempo se curva.",
+            use: "\nAs ondas sonoras limpam a poeira de cada canto.",
+            talk: "\nA música faz o notebook rejuvenescer a cada batida.",
+            check: "\nReprodução ativa. Volume no talo. Emoção no limite."
         }
     }
+    
 }; 

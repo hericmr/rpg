@@ -180,46 +180,52 @@ export default class InteractionController {
                         onSelect: () => this.showPasswordPrompt()
                     });
                 } else if (this.computerState.isHacked) {
-                    // Se o computador está hackeado, mostra opção de música
+                    // Se o computador está hackeado, mostra opções de música e pareamento
+                    if (this.jblState.isOn && this.jblState.isBluetoothEnabled && !this.isPaired) {
+                        options.push({
+                            icon: '🔗',
+                            label: 'Parear com JBL',
+                            onSelect: () => {
+                                this.handleConnect(point);
+                            }
+                        });
+                    }
+                    
+                    if (this.isPaired) {
+                        options.push({
+                            icon: '🎵',
+                            label: 'Tocar Lésbica Futurista na JBL',
+                            onSelect: () => {
+                                if (!this.jblState.isOn || !this.jblState.isBluetoothEnabled) {
+                                    this.showDialog('A JBL precisa estar ligada e com Bluetooth ativado primeiro!', {
+                                        dialogColor: 0xff0000,
+                                        autoClose: true
+                                    });
+                                    return;
+                                }
+                                
+                                // Toca a música
+                                if (MUSICAS_REVOLUCIONARIAS.length > 0) {
+                                    this.handlePlayMusic(MUSICAS_REVOLUCIONARIAS[0]);
+                                }
+                            }
+                        });
+                    }
+
                     options.push({
-                        icon: '🎵',
-                        label: 'Tocar Lésbica Futurista na JBL',
-                        onSelect: () => {
-                            if (!this.jblState.isOn || !this.jblState.isBluetoothEnabled) {
-                                this.showDialog('A JBL precisa estar ligada e com Bluetooth ativado primeiro!', {
-                                    dialogColor: 0xff0000,
-                                    autoClose: true
-                                });
-                                return;
-                            }
-                            // Tenta parear automaticamente se ainda não estiver pareado
-                            if (!this.isPaired) {
-                                this.isPaired = true;
-                                this.showAchievement(MENSAGENS_CONQUISTA.connected);
-                            }
-                            // Toca a música
-                            if (MUSICAS_REVOLUCIONARIAS.length > 0) {
-                                this.handlePlayMusic(MUSICAS_REVOLUCIONARIAS[0]);
-                            }
-                        }
+                        icon: '🔌',
+                        label: 'Desligar',
+                        onSelect: () => this.handleShutdown(point)
                     });
                 }
-
-                options.push({
-                    icon: '🔌',
-                    label: 'Desligar',
-                    onSelect: () => this.handleShutdown(point)
-                });
             }
 
-            // Adiciona opção de chutar para o computador
-            if (this.computerState.isOn && !this.computerState.isHacked) {
-                options.push({
-                    icon: '👢',
-                    label: 'Chutar',
-                    onSelect: () => this.handleKick(point)
-                });
-            }
+            // Adiciona opção de chutar para o computador (sempre disponível)
+            options.push({
+                icon: '👢',
+                label: 'Chutar',
+                onSelect: () => this.handleKick(point)
+            });
 
         } else if (point.type === 'jbl') {
             // Opções da JBL Overclocked
@@ -264,13 +270,11 @@ export default class InteractionController {
             }
 
             // Adiciona opção de chutar para a JBL
-            if (this.jblState.isOn && !this.jblState.isBluetoothEnabled) {
-                options.push({
-                    icon: '👢',
-                    label: 'Chutar',
-                    onSelect: () => this.handleKickJBL(point)
-                });
-            }
+            options.push({
+                icon: '👢',
+                label: 'Chutar',
+                onSelect: () => this.handleKickJBL(point)
+            });
         }
 
         // Opções comuns
@@ -546,42 +550,41 @@ export default class InteractionController {
     private handleKick(point: InteractionPoint): void {
         this.currentMenu?.close();
 
-        if (point.type === 'computador' && this.computerState.isOn && !this.computerState.isHacked) {
-            this.computerState.isHacked = true;
-            this.computerState.isUnlocked = true;
-            this.computerState.state = 'hacked';
-            
-            // Mostra mensagem de hack com tema cyberpunk
-            this.showDialog(ESTADOS_DISPOSITIVOS.computer.hacked.look, {
-                dialogColor: 0xff1493,
-                autoClose: true
-            });
-            this.showAchievement(MENSAGENS_CONQUISTA.computerHacked);
-            
-            // Se a JBL já estiver pronta, tenta iniciar a música
-            if (this.jblState.isOn && this.jblState.isBluetoothEnabled) {
-                this.isPaired = true;
-                this.showAchievement(MENSAGENS_CONQUISTA.connected);
-                
-                // Inicia a música após um pequeno delay para dar tempo de ler as mensagens
-                this.scene.time.delayedCall(2000, () => {
-                    if (MUSICAS_REVOLUCIONARIAS.length > 0 && !this.musicState.isPlaying) {
-                        this.handlePlayMusic(MUSICAS_REVOLUCIONARIAS[0]);
-                    }
+        if (point.type === 'computador') {
+            if (!this.computerState.isOn) {
+                this.showDialog('eu não vou chutar isso...', {
+                    dialogColor: 0xff0000,
+                    autoClose: true
                 });
-            } else {
+                return;
+            }
+
+            if (!this.computerState.isHacked) {
+                this.computerState.isHacked = true;
+                this.computerState.isUnlocked = true;
+                this.computerState.state = 'hacked';
+                
+                // Mostra mensagem de hack com tema cyberpunk
+                this.showDialog(ESTADOS_DISPOSITIVOS.computer.hacked.look, {
+                    dialogColor: 0xff1493,
+                    autoClose: true
+                });
+                this.showAchievement(MENSAGENS_CONQUISTA.computerHacked);
+                
+                // Show follow-up message about next steps
                 this.showDialog(ESTADOS_DISPOSITIVOS.computer.hacked.use, {
                     dialogColor: 0x9400d3,
                     autoClose: true
                 });
+                return;
             }
-            return;
-        }
 
-        this.showDialog('Você chuta mas nada acontece... Além da sua dor no pé.', {
-            dialogColor: 0xff0000,
-            autoClose: true
-        });
+            // Se já estiver hackeado, apenas mostra mensagem
+            this.showDialog('Não, eu nao preciso chutar isso agora...', {
+                dialogColor: 0xff0000,
+                autoClose: true
+            });
+        }
     }
 
     private handleConnect(point: InteractionPoint): void {
@@ -705,14 +708,21 @@ export default class InteractionController {
                        `🎧 Tocando agora: ${song.title} por ${song.artist}\n${song.description}`, {
             dialogColor: 0xff1493,
             autoClose: true,
-            noMenuReturn: true
-        });
-
-        // Trigger NPC wake up reaction after a short delay
-        this.scene.time.delayedCall(2000, () => {
-            const npcController = (this.scene as any).npcController;
-            if (npcController) {
-                npcController.wakeUpAngry();
+            noMenuReturn: true,
+            onClose: () => {
+                // Trigger NPC wake up reaction after dialog closes
+                const npcController = (this.scene as any).npcController;
+                if (npcController) {
+                    npcController.wakeUpAngry();
+                    // Mostrar mensagem do NPC acordando
+                    this.scene.time.delayedCall(500, () => {
+                        this.showDialog('💢 O QUE É ISSO?! QUEM OUSA PERTURBAR MEU SONO?!', {
+                            dialogColor: 0xff0000,
+                            autoClose: true,
+                            name: 'Guarda'
+                        });
+                    });
+                }
             }
         });
     }
@@ -878,7 +888,15 @@ export default class InteractionController {
         this.currentMenu?.close();
 
         if (point.type === 'jbl') {
-            if (!this.jblState.isBluetoothEnabled && this.jblState.isOn) {
+            if (!this.jblState.isOn) {
+                this.showDialog('eu não vou chutar isso...', {
+                    dialogColor: 0xff0000,
+                    autoClose: true
+                });
+                return;
+            }
+
+            if (!this.jblState.isBluetoothEnabled) {
                 this.jblState.isBluetoothEnabled = true;
                 this.jblState.state = 'bluetooth';
                 
@@ -889,29 +907,18 @@ export default class InteractionController {
                 });
                 this.showAchievement(MENSAGENS_CONQUISTA.bluetoothOn);
                 
-                // Se o computador já estiver hackeado, tenta iniciar a música
-                if (this.computerState.isHacked) {
-                    this.isPaired = true;
-                    this.showAchievement(MENSAGENS_CONQUISTA.connected);
-                    
-                    // Inicia a música após um pequeno delay
-                    this.scene.time.delayedCall(2000, () => {
-                        if (MUSICAS_REVOLUCIONARIAS.length > 0 && !this.musicState.isPlaying) {
-                            this.handlePlayMusic(MUSICAS_REVOLUCIONARIAS[0]);
-        }
-                    });
-                } else {
-                    this.showDialog(ESTADOS_DISPOSITIVOS.jbl.bluetooth.use, {
-                        dialogColor: 0x9400d3,
-                        autoClose: true
-                    });
-                }
-            } else {
-                this.showDialog('Você chuta mas nada acontece... Além da sua dor no pé.', {
-                    dialogColor: 0xff0000,
+                // Show follow-up message about pairing
+                this.showDialog(ESTADOS_DISPOSITIVOS.jbl.bluetooth.use, {
+                    dialogColor: 0x9400d3,
                     autoClose: true
                 });
+                return;
             }
+
+            this.showDialog('Não, eu nao preciso chutar isso agora...', {
+                dialogColor: 0xff0000,
+                autoClose: true
+            });
         }
     }
 

@@ -86,9 +86,9 @@ export class InteractionMenu {
             const button = this.scene.add.text(
                 startX + (index * spacing),
                 config.y,
-                `${option.icon}\n${option.label}`,
+                option.icon,
                 {
-                    fontSize: '10px',
+                    fontSize: '24px',
                     fontFamily: 'monospace',
                     color: '#FFFFFF',
                     align: 'center',
@@ -97,6 +97,7 @@ export class InteractionMenu {
             );
             button.setScrollFactor(0);
             button.setDepth(101);
+            button.setOrigin(0.5, 0.5);
             this.buttons.push(button);
         });
 
@@ -142,8 +143,14 @@ export class InteractionMenu {
         this.buttons.forEach((btn, idx) => {
             if (idx === this.selectedIndex) {
                 btn.setStyle({ backgroundColor: '#FFD700', color: '#1a237e' });
+                // Mostrar o label abaixo do ícone
+                btn.setText(`${this.options[idx].icon}\n${this.options[idx].label}`);
+                btn.setFontSize(16);
             } else {
                 btn.setStyle({ backgroundColor: undefined, color: '#FFFFFF' });
+                // Mostrar apenas o ícone
+                btn.setText(this.options[idx].icon);
+                btn.setFontSize(24);
             }
         });
     }

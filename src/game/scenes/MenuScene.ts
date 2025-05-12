@@ -22,7 +22,7 @@ export default class MenuScene extends Scene {
         this.load.image('title', `${publicUrl}/assets/titulo.svg`);
         this.load.image('button', `${publicUrl}/assets/mapa.png`);
 
-        this.load.audio('menuMusic', `${publicUrl}/assets/msc.wav`);
+        this.load.audio('menuMusic', `${publicUrl}/assets/assets_msc.wav`);
         this.load.image('character', `${publicUrl}/assets/character.png`);
         this.load.image('xumbro', `${publicUrl}/assets/xumbro.png`);
     }

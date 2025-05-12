@@ -20,7 +20,7 @@ export default class BootScene extends Scene {
 
     preload(): void {
         this.load.image('menu', this.assetPath('menu.png'));
-        this.load.audio('msc', this.assetPath('musicaambiente.mp3'));
+        this.load.audio('msc', this.assetPath('assets_msc.wav'));
         this.loadFrameSequence(0, 49);
     }
 
@@ -52,7 +52,7 @@ export default class BootScene extends Scene {
     }
 
     private startMusic(): void {
-        this.sound.play('msc', { volume: 0.2, loop: true });
+        this.sound.play('msc', { volume: 0.1, loop: true });
     }
 
     private loadFrameSequence(start: number, end: number): void {

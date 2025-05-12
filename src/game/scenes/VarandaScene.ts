@@ -5,6 +5,10 @@ import { DialogBox } from '../components/DialogBox';
 import { BaseScene } from './BaseScene';
 import { InteractionPoint } from '../controllers/InteractionController';
 
+interface SceneData {
+    fromVaranda?: boolean;
+}
+
 export default class VarandaScene extends BaseScene {
     private gbEffect!: GBEffect;
     private mapLayersCache: {
@@ -186,7 +190,8 @@ export default class VarandaScene extends BaseScene {
         if (player.sprite.x <= -16) {
             console.log('Jogador saiu pela esquerda, voltando para GameScene...');
             player.sprite.setVelocity(0, 0);
-            this.scene.start('GameScene', { fromRight: true });
+            const data: SceneData = { fromVaranda: true };
+            this.scene.start('GameScene', data);
             return;
         }
     }
