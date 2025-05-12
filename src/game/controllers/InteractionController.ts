@@ -1,6 +1,8 @@
-import { Scene, GameObjects, Physics } from 'phaser';
+import { Scene } from 'phaser';
 import { DialogBox } from '../components/DialogBox';
 import { InteractionMenu } from '../components/InteractionMenu';
+import { ESTADOS_DISPOSITIVOS, MUSICAS_REVOLUCIONARIAS, MENSAGENS_CONQUISTA, SongInfo } from '../config/estadosTransitorios';
+import GameState, { JBLDeviceState, ComputerDeviceState, MusicState } from '../state/GameState';
 
 export interface InteractionPoint {
     x: number;
@@ -15,7 +17,7 @@ export interface InteractionPoint {
     };
 }
 
-export class InteractionController {
+export default class InteractionController {
     private scene: Scene;
     private interactionPoints: InteractionPoint[] = [];
     private currentDialog: DialogBox | null = null;
@@ -25,31 +27,53 @@ export class InteractionController {
     private readonly interactionDistance: number = 50;
     private currentMusic: Phaser.Sound.BaseSound | null = null;
     private currentInteractionPoint: InteractionPoint | null = null;
-    
-    private jblState: {
-        isOn: boolean;
-        isBluetoothEnabled: boolean;
-    } = {
-        isOn: false,
-        isBluetoothEnabled: false
-    };
-    
-    private computerState: {
-        isOn: boolean;
-        isHacked: boolean;
-    } = {
-        isOn: false,
-        isHacked: false
-    };
+    private gameState: GameState;
+    private isInitialized: boolean = false;
 
     constructor(scene: Scene) {
         this.scene = scene;
+        this.gameState = GameState.getInstance();
+    }
+
+    private get jblState(): JBLDeviceState {
+        return this.gameState.jblState;
+    }
+
+    private set jblState(newState: JBLDeviceState) {
+        this.gameState.jblState = newState;
+    }
+
+    private get computerState(): ComputerDeviceState {
+        return this.gameState.computerState;
+    }
+
+    private set computerState(newState: ComputerDeviceState) {
+        this.gameState.computerState = newState;
+    }
+
+    private get musicState(): MusicState {
+        return this.gameState.musicState;
+    }
+
+    private set musicState(newState: MusicState) {
+        this.gameState.musicState = newState;
+    }
+
+    private get isPaired(): boolean {
+        return this.gameState.isPaired;
+    }
+
+    private set isPaired(value: boolean) {
+        this.gameState.isPaired = value;
     }
 
     public init(): void {
+        if (this.isInitialized) {
+            return;
+        }
+
         if (!this.scene.input?.keyboard) {
-            console.warn('[InteractionController] Keyboard not available, retrying in 100ms...');
-            this.scene.time.delayedCall(100, () => this.init());
+            console.warn('[InteractionController] Keyboard not available, will retry initialization later');
             return;
         }
 
@@ -76,7 +100,7 @@ export class InteractionController {
             const playerY = player.y;
 
             const nearbyPoint = this.interactionPoints.find(point => {
-                const distance = Phaser.Math.Distance.Between(
+            const distance = Phaser.Math.Distance.Between(
                     playerX, playerY,
                     point.x, point.y
                 );
@@ -94,13 +118,33 @@ export class InteractionController {
                 console.log('[InteractionController] Nenhum ponto de interação próximo.');
             }
         });
+
+        this.isInitialized = true;
     }
 
     private stopMusic(): void {
-        if (this.currentMusic) {
-            this.currentMusic.stop();
-            this.currentMusic.destroy();
-            this.currentMusic = null;
+        // Stop ALL existing sounds/music first
+        if (this.scene.sound) {
+            this.scene.sound.getAllPlaying().forEach(sound => {
+                sound.stop();
+                sound.destroy();
+            });
+        }
+
+        if (this.musicState.currentSong) {
+            this.musicState.currentSong.stop();
+            this.musicState.currentSong.destroy();
+            this.musicState.currentSong = null;
+        }
+        this.musicState.isPlaying = false;
+        this.musicState.currentSongInfo = null;
+        
+        // Reset device states if they were playing
+        if (this.jblState.state === 'playing') {
+            this.jblState.state = this.isPaired ? 'paired' : 'bluetooth';
+        }
+        if (this.computerState.state === 'playing') {
+            this.computerState.state = this.computerState.isHacked ? 'hacked' : (this.isPaired ? 'paired' : 'unlocked');
         }
     }
 
@@ -111,105 +155,148 @@ export class InteractionController {
 
         this.currentInteractionPoint = point;
         this.isInteracting = true;
-        console.log('[InteractionController] Abrindo menu de interação para o ponto:', point);
+
         const options = [
             {
                 icon: '👁️',
                 label: 'Olhar',
-                onSelect: () => { 
-                    console.log('[InteractionController] Opção "Olhar" selecionada.');
-                    this.currentMenu?.close(); 
-                    this.handleLook(point); 
-                }
-            },
-            {
-                icon: '✋',
-                label: 'Usar',
-                onSelect: () => { 
-                    console.log('[InteractionController] Opção "Usar" selecionada.');
-                    this.currentMenu?.close(); 
-                    this.handlePick(point); 
-                }
-            },
-            {
-                icon: '👄',
-                label: 'Falar',
-                onSelect: () => { 
-                    console.log('[InteractionController] Opção "Falar" selecionada.');
-                    this.currentMenu?.close(); 
-                    this.handleTalk(point); 
-                }
-            },
-            {
-                icon: '👢',
-                label: 'Chutar',
-                onSelect: () => { 
-                    console.log('[InteractionController] Opção "Chutar" selecionada.');
-                    this.currentMenu?.close(); 
-                    this.handleKick(point); 
-                }
+                onSelect: () => this.handleLook(point)
             }
         ];
 
-        // Adicionar opção "Tocar música" se o computador estiver hackeado e a JBL ligada
-        if (point.type === 'computador' && this.computerState.isHacked && this.jblState.isOn) {
-            options.push({
-                icon: '🎵',
-                label: 'Tocar música',
-                onSelect: () => {
-                    console.log('[InteractionController] Opção "Tocar música" selecionada.');
-                    
-                    // Parar música anterior se existir
-                    this.stopMusic();
-                    
-                    // Tocar o áudio
-                    this.currentMusic = this.scene.sound.add('techno', {
-                        volume: 0.8,
-                        loop: true
+        if (point.type === 'computador') {
+            // Opções do computador
+            if (!this.computerState.isOn) {
+                options.push({
+                    icon: '⚡',
+                    label: 'Ligar',
+                    onSelect: () => this.handlePick(point)
+                });
+            } else {
+                if (!this.computerState.isUnlocked && !this.computerState.isHacked) {
+                    options.push({
+                        icon: '🔑',
+                        label: 'Fazer Login',
+                        onSelect: () => this.showPasswordPrompt()
                     });
-                    this.currentMusic.play();
-                    
-                    // Fechar o menu imediatamente
-                    this.currentMenu?.close();
-                    this.currentMenu = null;
-                    
-                    // Mostrar diálogo e configurar para fechar automaticamente
-                    this.showDialog('A JBL começa a tocar um som ensurdecedor de techno industrial!', {
-                        dialogColor: 0xff0000, // Vermelho para indicar a intensidade do som
-                        autoClose: true, // Indica que o diálogo deve fechar automaticamente
-                        noMenuReturn: true // Impede que o menu reabra após o diálogo
+                } else if (this.computerState.isHacked) {
+                    // Se o computador está hackeado, mostra opção de música
+                    options.push({
+                        icon: '🎵',
+                        label: 'Tocar Lésbica Futurista na JBL',
+                        onSelect: () => {
+                            if (!this.jblState.isOn || !this.jblState.isBluetoothEnabled) {
+                                this.showDialog('A JBL precisa estar ligada e com Bluetooth ativado primeiro!', {
+                                    dialogColor: 0xff0000,
+                                    autoClose: true
+                                });
+                                return;
+                            }
+                            // Tenta parear automaticamente se ainda não estiver pareado
+                            if (!this.isPaired) {
+                                this.isPaired = true;
+                                this.showAchievement(MENSAGENS_CONQUISTA.connected);
+                            }
+                            // Toca a música
+                            if (MUSICAS_REVOLUCIONARIAS.length > 0) {
+                                this.handlePlayMusic(MUSICAS_REVOLUCIONARIAS[0]);
+                            }
+                        }
                     });
                 }
-            });
+
+                options.push({
+                    icon: '🔌',
+                    label: 'Desligar',
+                    onSelect: () => this.handleShutdown(point)
+                });
+            }
+
+            // Adiciona opção de chutar para o computador
+            if (this.computerState.isOn && !this.computerState.isHacked) {
+                options.push({
+                    icon: '👢',
+                    label: 'Chutar',
+                    onSelect: () => this.handleKick(point)
+                });
+            }
+
+        } else if (point.type === 'jbl') {
+            // Opções da JBL Overclocked
+            if (!this.jblState.isOn) {
+                options.push({
+                    icon: '⚡',
+                    label: 'Ligar',
+                    onSelect: () => this.handlePick(point)
+                });
+            } else {
+                if (this.computerState.isHacked && this.jblState.isBluetoothEnabled) {
+                    options.push({
+                        icon: '🎵',
+                        label: 'Tocar Lésbica Futurista',
+                        onSelect: () => {
+                            // Tenta parear automaticamente se ainda não estiver pareado
+                            if (!this.isPaired) {
+                                this.isPaired = true;
+                                this.showAchievement(MENSAGENS_CONQUISTA.connected);
+                            }
+                            // Toca a música
+                            if (MUSICAS_REVOLUCIONARIAS.length > 0) {
+                                this.handlePlayMusic(MUSICAS_REVOLUCIONARIAS[0]);
+                            }
+                        }
+                    });
+                }
+                
+                if (this.jblState.state === 'playing') {
+                    options.push({
+                        icon: '🔊',
+                        label: 'Ajustar Volume',
+                        onSelect: () => this.showVolumeControl()
+                    });
+                }
+
+                options.push({
+                    icon: '🔌',
+                    label: 'Desligar',
+                    onSelect: () => this.handleShutdown(point)
+                });
+            }
+
+            // Adiciona opção de chutar para a JBL
+            if (this.jblState.isOn && !this.jblState.isBluetoothEnabled) {
+                options.push({
+                    icon: '👢',
+                    label: 'Chutar',
+                    onSelect: () => this.handleKickJBL(point)
+                });
+            }
         }
 
-        // Adicionar opção "Sair" sempre por último
-        options.push({
-            icon: '🚪',
-            label: 'Sair',
-            onSelect: () => { 
-                console.log('[InteractionController] Opção "Sair" selecionada.');
-                this.currentMenu?.close();
-                this.isInteracting = false;
+        // Opções comuns
+        options.push(
+            {
+                icon: '👄',
+                label: 'Falar',
+                onSelect: () => this.handleTalk(point)
+            },
+            {
+                icon: '🚪',
+                label: 'Sair',
+                onSelect: () => {
+                    this.currentMenu?.close();
+                    this.isInteracting = false;
+                }
             }
-        });
+        );
 
         let title = '';
         switch (point.type) {
             case 'jbl':
-                title = 'JBL';
-                break;
-            case 'lion':
-                title = 'Lion';
+                title = 'JBL Overclocked';
                 break;
             case 'computador':
-                title = 'Computador';
-                break;
-            case 'telescopio':
-                title = 'Telescópio';
-                break;
-            case 'vaso':
-                title = 'Vaso';
+                title = `SapphicOS Terminal - ${this.getComputerStatusText()}`;
                 break;
             default:
                 title = point.type || 'Objeto';
@@ -228,96 +315,228 @@ export class InteractionController {
         });
     }
 
+    private getComputerStatusText(): string {
+        if (!this.computerState.isOn) return 'Desligado';
+        if (this.computerState.isHacked) return 'Hackeado';
+        if (this.computerState.isUnlocked) return 'Desbloqueado';
+        if (this.computerState.state === 'playing') return 'Reproduzindo';
+        return 'Bloqueado';
+    }
+
+    private handleShutdown(point: InteractionPoint): void {
+        this.currentMenu?.close();
+        
+        if (point.type === 'computador') {
+            this.computerState.isOn = false;
+            this.computerState.state = 'off';
+            this.stopMusic();
+            this.showDialog('O computador foi desligado com segurança.', {
+                dialogColor: 0x1a237e,
+                autoClose: true
+            });
+        } else if (point.type === 'jbl') {
+            this.jblState.isOn = false;
+            this.jblState.isBluetoothEnabled = false;
+            this.jblState.state = 'off';
+            this.stopMusic();
+            this.showDialog('A JBL foi desligada.', {
+                dialogColor: 0x1a237e,
+                autoClose: true
+            });
+        }
+    }
+
+    private showComputerFiles(): void {
+        const options = [
+            {
+                label: '📁 sapphic_beats_collection/',
+                onSelect: () => this.showMusicSelection()
+            },
+            {
+                label: '📝 manifesto_lesbico.txt',
+                onSelect: () => this.showDialog('Um manifesto poético sobre a revolução lésbica digital.', {
+                    dialogColor: 0xff1493
+                })
+            },
+            {
+                label: '🌈 fotos_pride.zip',
+                onSelect: () => this.showDialog('Uma coleção de fotos de paradas do orgulho LGBTQIA+.', {
+                    dialogColor: 0xff1493
+                })
+            },
+            {
+                label: '⬅️ Voltar',
+                onSelect: () => this.showInteractionMenu(this.currentInteractionPoint!)
+            }
+        ];
+
+        this.showDialog('Arquivos do Sistema:', {
+            dialogColor: 0x9400d3,
+            options
+        });
+    }
+
+    private showVolumeControl(): void {
+        const options = [
+            {
+                label: '🔊 Volume Máximo',
+                onSelect: () => this.handleVolumeChange(1.0)
+            },
+            {
+                label: '🔉 Volume Médio',
+                onSelect: () => this.handleVolumeChange(0.6)
+            },
+            {
+                label: '🔈 Volume Baixo',
+                onSelect: () => this.handleVolumeChange(0.3)
+            },
+            {
+                label: '⬅️ Voltar',
+                onSelect: () => this.showInteractionMenu(this.currentInteractionPoint!)
+            }
+        ];
+
+        this.showDialog('Controle de Volume:', {
+            dialogColor: 0x9400d3,
+            options
+        });
+    }
+
+    private handleVolumeChange(volume: number): void {
+        if (this.currentMusic) {
+            (this.currentMusic as any).volume = volume;
+            this.showDialog(`Volume ajustado para ${Math.round(volume * 100)}%`, {
+                dialogColor: 0x9400d3,
+                autoClose: true
+            });
+        }
+    }
+
     private handleLook(point: InteractionPoint): void {
+        this.currentMenu?.close();
+        
         if (point.type === 'jbl') {
-            const isOn = point.data?.isOn ?? this.jblState.isOn;
-            const message = isOn
-                ? 'Uma JBL com overclock, superpotente, apliquei um pouco de graxa e agora atinge 9999 decibeis. Está ligada!'
-                : 'JBL com overclock, superpotente... atinge 99 mil decibeis.';
-            this.showDialog(message);
+            const message = ESTADOS_DISPOSITIVOS.jbl[this.jblState.state].look;
+            this.showDialog(message, {
+                dialogColor: 0x9400d3
+            });
             return;
         }
 
         if (point.type === 'computador') {
-            const message = this.computerState.isOn
-                ? this.computerState.isHacked
-                    ? 'O computador está ligado e hackeado. A tela mostra várias janelas de terminal abertas.'
-                    : 'O computador está ligado. A tela pede uma senha.'
-                : 'Um computador antigo. Parece que ainda funciona.';
-            this.showDialog(message);
-            return;
-        }
-
-        if (point.type === 'lion') {
-            this.showDialog('dr lion um npc muito legal.');
-            return;
-        }
-
-        if (point.dialog) {
-            this.showDialog(point.dialog);
+            const message = ESTADOS_DISPOSITIVOS.computer[this.computerState.state].look;
+            this.showDialog(message, {
+                dialogColor: 0x9400d3
+            });
             return;
         }
 
         this.showDialog('Você olha atentamente, mas não vê nada de especial.');
     }
 
-    private handlePick(point: InteractionPoint): void {
+    private handleCheck(point: InteractionPoint): void {
+        this.currentMenu?.close();
+        
         if (point.type === 'jbl') {
-            this.jblState.isOn = !this.jblState.isOn;
-            if (!point.data) point.data = {};
-            point.data.isOn = this.jblState.isOn;
-
-            if (!this.jblState.isOn) {
-                this.stopMusic();
-            }
-
-            const stateMsg = this.jblState.isOn
-                ? 'Ligando... Bluetooth ativado! Essa JBL agora tá ligada... faz até o chão tremer!'
-                : 'Bluetooth desativado! A JBL foi desligada.';
-            
-            this.showDialog(stateMsg);
-            return;
-        }
-
-        if (point.type === 'computador') {
-            this.computerState.isOn = !this.computerState.isOn;
-            const message = this.computerState.isOn
-                ? 'Você liga o computador. A tela pisca e mostra uma tela de login.'
-                : 'Você desliga o computador.';
+            const message = ESTADOS_DISPOSITIVOS.jbl[this.jblState.state].check;
             this.showDialog(message);
             return;
         }
 
-        this.showDialog('Você não consegue pegar isso.');
+        if (point.type === 'computador') {
+            const message = ESTADOS_DISPOSITIVOS.computer[this.computerState.state].check;
+            this.showDialog(message);
+            return;
+        }
+
+        this.showDialog('Nada de especial para verificar aqui.');
+    }
+
+    private handlePick(point: InteractionPoint): void {
+        this.currentMenu?.close();
+
+        if (point.type === 'jbl') {
+            if (this.jblState.state === 'off') {
+                this.jblState.isOn = true;
+                this.jblState.state = 'on';
+                this.showAchievement(MENSAGENS_CONQUISTA.jblOn);
+            } else if (this.jblState.state === 'on') {
+                this.jblState.isBluetoothEnabled = true;
+                this.jblState.state = 'bluetooth';
+                this.showAchievement(MENSAGENS_CONQUISTA.bluetoothOn);
+            }
+            
+            const message = ESTADOS_DISPOSITIVOS.jbl[this.jblState.state].use;
+            this.showDialog(message);
+            return;
+        }
+
+        if (point.type === 'computador') {
+            if (this.computerState.state === 'off') {
+                this.computerState.isOn = true;
+                this.computerState.state = 'on';
+                this.showAchievement(MENSAGENS_CONQUISTA.computerOn);
+                this.showPasswordPrompt();
+            } else if (this.computerState.state === 'on' && !this.computerState.isUnlocked) {
+                this.showPasswordPrompt();
+            }
+            
+            const message = ESTADOS_DISPOSITIVOS.computer[this.computerState.state].use;
+            this.showDialog(message);
+            return;
+        }
+
+        this.showDialog('Você não consegue interagir com isso.');
+    }
+
+    private showPasswordPrompt(): void {
+        this.showDialog('Digite a senha para desbloquear o sistema:', {
+            dialogColor: 0x9400d3,
+            options: [
+                {
+                    label: 'Digitar senha: sapphic_future_2025',
+                    onSelect: () => this.handlePasswordInput('sapphic_future_2025')
+                },
+                {
+                    label: 'Cancelar',
+                    onSelect: () => this.showInteractionMenu(this.currentInteractionPoint!)
+                }
+            ]
+        });
+    }
+
+    private handlePasswordInput(input: string): void {
+        if (input === this.computerState.password) {
+            this.computerState.isUnlocked = true;
+            this.computerState.state = 'unlocked';
+            this.showDialog('Acesso concedido! Bem-vinda ao SapphicOS.', {
+                dialogColor: 0xff1493,
+                autoClose: true
+            });
+            this.showAchievement('🔓 Login Sapphic: Sistema desbloqueado com sucesso!');
+        } else {
+            this.showDialog('Senha incorreta. Tente novamente ou... talvez um método mais direto?', {
+                dialogColor: 0xff0000
+            });
+        }
     }
 
     private handleTalk(point: InteractionPoint): void {
+        this.currentMenu?.close();
+
         if (point.type === 'jbl') {
-            const isOn = point.data?.isOn ?? this.jblState.isOn;
-            const message = isOn
-                ? 'Essa jbl ficou braba demais depois de eu ter passado graxa nas engrenagens...'
-                : 'A JBL está aguardando um comando.';
-            this.showDialog(message);
+            const message = ESTADOS_DISPOSITIVOS.jbl[this.jblState.state].talk;
+            this.showDialog(message, {
+                dialogColor: 0x9400d3
+            });
             return;
         }
 
         if (point.type === 'computador') {
-            if (!this.computerState.isOn) {
-                this.showDialog('O computador está desligado.');
-                return;
-            }
-
-            if (!this.computerState.isHacked) {
-                this.showDialog('Você tenta falar com o computador, mas ele não responde. Talvez seja necessário hackear o sistema primeiro.');
-                return;
-            }
-
-            this.showDialog('O computador responde com uma voz robótica: "Sistema online. Como posso ajudar?"');
-            return;
-        }
-
-        if (point.type === 'lion') {
-            this.showDialog('dorme como pedra, mas ela não responde.');
+            const message = ESTADOS_DISPOSITIVOS.computer[this.computerState.state].talk;
+            this.showDialog(message, {
+                dialogColor: 0x9400d3
+            });
             return;
         }
 
@@ -325,33 +544,225 @@ export class InteractionController {
     }
 
     private handleKick(point: InteractionPoint): void {
-        if (point.type === 'jbl') {
-            const isOn = point.data?.isOn ?? this.jblState.isOn;
-            const message = isOn
-                ? 'Não tem pra que chutar, ela já está ligada.'
-                : 'Essa JBL está num lugar muito alto para chutar.';
-            this.showDialog(message);
-            return;
-        }
+        this.currentMenu?.close();
 
-        if (point.type === 'computador') {
-            if (this.computerState.isOn) {
-                this.computerState.isHacked = true;
-                this.showDialog('Você chuta o computador. A tela pisca e várias janelas de terminal se abrem. O sistema foi hackeado!', {
-                    noMenuReturn: true // Impede que o menu reabra após hackear o computador
+        if (point.type === 'computador' && this.computerState.isOn && !this.computerState.isHacked) {
+            this.computerState.isHacked = true;
+            this.computerState.isUnlocked = true;
+            this.computerState.state = 'hacked';
+            
+            // Mostra mensagem de hack com tema cyberpunk
+            this.showDialog(ESTADOS_DISPOSITIVOS.computer.hacked.look, {
+                dialogColor: 0xff1493,
+                autoClose: true
+            });
+            this.showAchievement(MENSAGENS_CONQUISTA.computerHacked);
+            
+            // Se a JBL já estiver pronta, tenta iniciar a música
+            if (this.jblState.isOn && this.jblState.isBluetoothEnabled) {
+                this.isPaired = true;
+                this.showAchievement(MENSAGENS_CONQUISTA.connected);
+                
+                // Inicia a música após um pequeno delay para dar tempo de ler as mensagens
+                this.scene.time.delayedCall(2000, () => {
+                    if (MUSICAS_REVOLUCIONARIAS.length > 0 && !this.musicState.isPlaying) {
+                        this.handlePlayMusic(MUSICAS_REVOLUCIONARIAS[0]);
+                    }
                 });
             } else {
-                this.showDialog('Você chuta o computador desligado. Nada acontece.');
+                this.showDialog(ESTADOS_DISPOSITIVOS.computer.hacked.use, {
+                    dialogColor: 0x9400d3,
+                    autoClose: true
+                });
             }
             return;
         }
 
-        if (point.type === 'lion') {
-            this.showDialog('Você chuta o Lion. Seu pé dói, mas ele continua dormindo.');
+        this.showDialog('Você chuta mas nada acontece... Além da sua dor no pé.', {
+            dialogColor: 0xff0000,
+            autoClose: true
+        });
+    }
+
+    private handleConnect(point: InteractionPoint): void {
+        this.currentMenu?.close();
+
+        if (!this.canConnect()) {
+            const errorMessage = this.getConnectionErrorMessage();
+            this.showDialog(errorMessage, {
+                dialogColor: 0xff0000
+            });
+            return;
+        }
+        
+        this.isPaired = true;
+        this.jblState.state = 'paired';
+        this.computerState.state = 'paired';
+        this.showAchievement(MENSAGENS_CONQUISTA.connected);
+        
+        this.showDialog(ESTADOS_DISPOSITIVOS.jbl.paired.look, {
+            dialogColor: 0x9400d3,
+            autoClose: true
+        });
+
+        // Try to autoplay music after a short delay
+        this.scene.time.delayedCall(2100, () => {
+            this.tryAutoPlayMusicAfterHack();
+        });
+    }
+
+    private canConnect(): boolean {
+        return (
+            this.jblState.isBluetoothEnabled &&
+            this.computerState.isOn &&
+            (this.computerState.isHacked || this.computerState.isUnlocked)
+        );
+    }
+
+    private getConnectionErrorMessage(): string {
+        if (!this.jblState.isBluetoothEnabled) return 'A JBL precisa estar com Bluetooth ativado primeiro.';
+        if (!this.computerState.isOn) return 'O computador precisa estar ligado.';
+        if (!this.computerState.isUnlocked && !this.computerState.isHacked) return 'O computador precisa estar desbloqueado ou hackeado primeiro.';
+        return 'Não é possível conectar os dispositivos no momento.';
+    }
+
+    private showMusicSelection(): void {
+        if (!this.computerState.isUnlocked && !this.computerState.isHacked) {
+            this.showDialog('Você precisa ter acesso ao sistema para escolher músicas.', {
+                dialogColor: 0xff0000
+            });
             return;
         }
 
-        this.showDialog('Você chuta o ar.');
+        const options = MUSICAS_REVOLUCIONARIAS.map(song => ({
+            label: `${song.title} - ${song.artist}`,
+                onSelect: () => {
+                this.handlePlayMusic(song);
+                this.showDialog(song.description, {
+                    dialogColor: 0x9400d3,
+                    autoClose: true
+                });
+                }
+        }));
+
+        this.showDialog('Escolha uma música para tocar:', {
+            dialogColor: 0x9400d3,
+            options
+        });
+    }
+
+    private handlePlayMusic(song: SongInfo): void {
+        this.currentMenu?.close();
+
+        // Verificar se a música já está tocando
+        if (this.musicState.isPlaying) {
+            this.showDialog('A música já está tocando!', {
+                dialogColor: 0xff0000,
+                autoClose: true
+            });
+            return;
+        }
+
+        // Verificar todas as condições necessárias
+        if (!this.canPlayMusic()) {
+            const errorMessage = this.getMusicErrorMessage();
+            this.showDialog(errorMessage, {
+                dialogColor: 0xff0000,
+                autoClose: true
+            });
+            return;
+        }
+
+        // Stop ALL existing sounds/music first
+        if (this.scene.sound) {
+            this.scene.sound.getAllPlaying().forEach(sound => {
+                sound.stop();
+                sound.destroy();
+            });
+        }
+
+        // Stop previous music if any
+        this.stopMusic();
+        
+        // Update states
+        this.jblState.state = 'playing';
+        this.computerState.state = 'playing';
+        this.musicState.isPlaying = true;
+        this.musicState.currentSongInfo = song;
+        
+        // Play the new music
+        this.musicState.currentSong = this.scene.sound.add('lesbica_futurista', {
+            volume: this.jblState.volume,
+            loop: true
+        });
+        this.musicState.currentSong.play();
+
+        // Show achievement and current song info with cyberpunk theme
+        this.showAchievement(MENSAGENS_CONQUISTA.musicPlaying);
+        
+        // Mostra mensagem temática de música tocando
+        this.showDialog(ESTADOS_DISPOSITIVOS.jbl.playing.look + "\n\n" + 
+                       `🎧 Tocando agora: ${song.title} por ${song.artist}\n${song.description}`, {
+            dialogColor: 0xff1493,
+            autoClose: true,
+            noMenuReturn: true
+        });
+
+        // Trigger NPC wake up reaction after a short delay
+        this.scene.time.delayedCall(2000, () => {
+            const npcController = (this.scene as any).npcController;
+            if (npcController) {
+                npcController.wakeUpAngry();
+            }
+        });
+    }
+
+    private canPlayMusic(): boolean {
+        return (
+            this.jblState.isOn &&
+            this.jblState.isBluetoothEnabled &&
+            this.computerState.isOn &&
+            (this.computerState.isUnlocked || this.computerState.isHacked) &&
+            (this.isPaired || this.jblState.state === 'paired' || this.computerState.state === 'paired') &&
+            !this.musicState.isPlaying
+        );
+    }
+
+    private getMusicErrorMessage(): string {
+        if (this.musicState.isPlaying) return 'A música já está tocando!';
+        if (!this.jblState.isOn) return 'A JBL precisa estar ligada.';
+        if (!this.jblState.isBluetoothEnabled) return 'O Bluetooth da JBL precisa estar ativado.';
+        if (!this.computerState.isOn) return 'O computador precisa estar ligado.';
+        if (!this.computerState.isUnlocked && !this.computerState.isHacked) return 'O computador precisa estar desbloqueado ou hackeado.';
+        if (!this.isPaired && this.jblState.state !== 'paired' && this.computerState.state !== 'paired') return 'A JBL precisa estar pareada com o computador.';
+        return 'Não é possível tocar música no momento.';
+    }
+
+    private showAchievement(message: string): void {
+        // Criar um texto flutuante com a mensagem de conquista
+        const screenWidth = this.scene.cameras.main.width;
+        const achievementText = this.scene.add.text(screenWidth / 2, 100, message, {
+            fontSize: '20px',
+            color: '#ff1493',
+            stroke: '#000000',
+            strokeThickness: 4,
+            align: 'center'
+        });
+        achievementText.setOrigin(0.5);
+        achievementText.setScrollFactor(0);
+        achievementText.setDepth(1000);
+
+        // Animar o texto
+        this.scene.tweens.add({
+            targets: achievementText,
+            y: 50,
+            alpha: 0,
+            duration: 2000,
+            ease: 'Power2',
+            onComplete: () => {
+                achievementText.destroy();
+            }
+        });
     }
 
     public showDialog(
@@ -367,6 +778,7 @@ export class InteractionController {
             }[];
             autoClose?: boolean;
             noMenuReturn?: boolean;
+            onClose?: () => void;
         } = {}
     ): void {
         // Fecha o menu antes de mostrar o diálogo
@@ -383,7 +795,7 @@ export class InteractionController {
         console.log('[InteractionController] Abrindo diálogo:', message);
         const screenWidth = this.scene.cameras.main.width;
         const screenHeight = this.scene.cameras.main.height;
-        
+
         this.currentDialog = new DialogBox({
             scene: this.scene,
             x: screenWidth / 2,
@@ -396,11 +808,18 @@ export class InteractionController {
             dialogColor: options.dialogColor || 0x1a237e,
             options: options.options,
             autoClose: options.autoClose,
+            noMenuReturn: options.noMenuReturn,
             onClose: () => {
                 this.isInteracting = false;
                 this.currentDialog = null;
                 console.log('[InteractionController] Diálogo fechado.');
 
+                // Execute custom onClose if provided
+                if (options.onClose) {
+                    options.onClose();
+                }
+
+                // Return to menu if appropriate
                 if (!options.autoClose && !options.noMenuReturn && this.currentInteractionPoint) {
                     this.showInteractionMenu(this.currentInteractionPoint);
                 }
@@ -413,7 +832,7 @@ export class InteractionController {
         }
     }
 
-    public checkInteractions(playerSprite: Physics.Arcade.Sprite, playerClearance: string): void {
+    public checkInteractions(playerSprite: Phaser.GameObjects.Sprite, playerClearance: string): void {
         if (this.isInteracting || !this.spaceKey?.isDown) return;
 
         const playerBounds = playerSprite.getBounds();
@@ -453,5 +872,69 @@ export class InteractionController {
 
     public update(): void {
         // Atualizar lógica se necessário
+    }
+
+    private handleKickJBL(point: InteractionPoint): void {
+        this.currentMenu?.close();
+
+        if (point.type === 'jbl') {
+            if (!this.jblState.isBluetoothEnabled && this.jblState.isOn) {
+                this.jblState.isBluetoothEnabled = true;
+                this.jblState.state = 'bluetooth';
+                
+                // Mostra mensagem de ativação do Bluetooth com tema cyberpunk
+                this.showDialog(ESTADOS_DISPOSITIVOS.jbl.bluetooth.look, {
+                    dialogColor: 0xff1493,
+                    autoClose: true
+                });
+                this.showAchievement(MENSAGENS_CONQUISTA.bluetoothOn);
+                
+                // Se o computador já estiver hackeado, tenta iniciar a música
+                if (this.computerState.isHacked) {
+                    this.isPaired = true;
+                    this.showAchievement(MENSAGENS_CONQUISTA.connected);
+                    
+                    // Inicia a música após um pequeno delay
+                    this.scene.time.delayedCall(2000, () => {
+                        if (MUSICAS_REVOLUCIONARIAS.length > 0 && !this.musicState.isPlaying) {
+                            this.handlePlayMusic(MUSICAS_REVOLUCIONARIAS[0]);
+        }
+                    });
+                } else {
+                    this.showDialog(ESTADOS_DISPOSITIVOS.jbl.bluetooth.use, {
+                        dialogColor: 0x9400d3,
+                        autoClose: true
+                    });
+                }
+            } else {
+                this.showDialog('Você chuta mas nada acontece... Além da sua dor no pé.', {
+                    dialogColor: 0xff0000,
+                    autoClose: true
+                });
+            }
+        }
+    }
+
+    /**
+     * Verifica se todas as condições estão prontas para tocar música automaticamente.
+     * Retorna true se:
+     * - Computador está hackeado.
+     * - JBL está ligada.
+     * - Bluetooth está ativado.
+     * - Pareamento já ocorreu (isPaired === true).
+     */
+    private shouldAutoPlayMusic(): boolean {
+        return (
+            this.computerState.isHacked &&
+            this.jblState.isOn &&
+            this.jblState.isBluetoothEnabled &&
+            this.isPaired
+        );
+    }
+
+    private tryAutoPlayMusicAfterHack(): void {
+        if (this.shouldAutoPlayMusic()) {
+            this.showMusicSelection();
+        }
     }
 } 

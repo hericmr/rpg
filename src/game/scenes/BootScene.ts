@@ -8,36 +8,77 @@ export default class BootScene extends Scene {
     private readonly FRAME_HOLD = 3 * this.FPS;
     private readonly publicUrl = process.env.PUBLIC_URL || '';
 
+    // Constantes de tempo para clareza
+    private readonly INTRO_TWEEN_DURATION = 2000;
+    private readonly COPYRIGHT_FADE_DELAY = 5000;
+    private readonly LOOP_START_DELAY = 9000;
+    private readonly SCALE_ANIM_DURATION = 7000;
+
     constructor() {
         super({ key: 'BootScene' });
     }
 
     preload(): void {
-        this.load.image('menu', `${this.publicUrl}/assets/menu.png`);
-        this.load.audio('msc', `${this.publicUrl}/assets/eletronic.ogg`);
-
+        this.load.image('menu', this.assetPath('menu.png'));
+        this.load.audio('msc', this.assetPath('musicaambiente.mp3'));
         this.loadFrameSequence(0, 49);
     }
 
     create(): void {
-        this.cameras.main.setBackgroundColor('#000');
-        this.cameras.main.fadeIn(1000, 0, 0, 0);
-
-        this.sound.play('msc', { volume: 0.2, loop: true });
-
+        this.setupCamera();
+        this.startMusic();
         this.createMorphingSprite();
         this.createAnimations();
         this.createCopyrightText();
-
         this.playIntroSequence();
+
+        // Permitir pular cena com a tecla espaço
+        if (this.input.keyboard) {
+            this.input.keyboard.on('keydown-SPACE', () => {
+                this.skipIntro();
+            });
+        }
+    }
+
+    // === Helpers ===
+
+    private assetPath(file: string): string {
+        return `${this.publicUrl}/assets/${file}`;
+    }
+
+    private setupCamera(): void {
+        this.cameras.main.setBackgroundColor('#000');
+        this.cameras.main.fadeIn(1000, 0, 0, 0);
+    }
+
+    private startMusic(): void {
+        this.sound.play('msc', { volume: 0.2, loop: true });
     }
 
     private loadFrameSequence(start: number, end: number): void {
         for (let i = start; i <= end; i++) {
             const frame = i.toString().padStart(3, '0');
-            this.load.image(`frame_${frame}`, `${this.publicUrl}/assets/frames/frame_${frame}.png`);
+            this.load.image(`frame_${frame}`, this.assetPath(`frames/frame_${frame}.png`));
         }
     }
+
+    private generateFrames(start: number, end: number): { key: string }[] {
+        return Array.from({ length: end - start + 1 }, (_, i) => {
+            const frame = (i + start).toString().padStart(3, '0');
+            return { key: `frame_${frame}` };
+        });
+    }
+
+    private createAnimation(key: string, frames: { key: string }[], repeat: number): void {
+        this.anims.create({
+            key,
+            frames,
+            frameRate: this.FPS,
+            repeat
+        });
+    }
+
+    // === Criação de elementos ===
 
     private createMorphingSprite(): void {
         this.morphingSprite = this.add.sprite(
@@ -50,33 +91,39 @@ export default class BootScene extends Scene {
     }
 
     private createAnimations(): void {
-        this.anims.create({
-            key: 'morph',
-            frames: [
-                ...Array(this.FRAME_HOLD).fill({ key: 'frame_000' }),
-                ...this.generateFrames(1, 48),
-                ...Array(this.FRAME_HOLD).fill({ key: 'frame_049' })
-            ],
-            frameRate: this.FPS,
-            repeat: 0
-        });
+        this.createAnimation('morph', [
+            ...Array(this.FRAME_HOLD).fill({ key: 'frame_000' }),
+            ...this.generateFrames(1, 48),
+            ...Array(this.FRAME_HOLD).fill({ key: 'frame_049' })
+        ], 0);
 
-        this.anims.create({
-            key: 'morphLoop',
-            frames: [
-                ...this.generateFrames(1, 48),
-                ...Array(this.FRAME_HOLD).fill({ key: 'frame_049' })
-            ],
-            frameRate: this.FPS,
-            repeat: -1
-        });
+        this.createAnimation('morphLoop', [
+            ...this.generateFrames(1, 48),
+            ...Array(this.FRAME_HOLD).fill({ key: 'frame_049' })
+        ], -1);
     }
+
+    private createCopyrightText(): void {
+        this.copyrightText = this.add.text(
+            this.scale.width / 2,
+            this.scale.height - 55,
+            'Papai Lion\nIndie Games\n\nTODOS OS DIREITOS RESERVADOS',
+            {
+                fontFamily: 'monospace',
+                fontSize: '8px',
+                color: '#FFFFFF',
+                align: 'center'
+            }
+        ).setOrigin(0.5).setAlpha(0);
+    }
+
+    // === Sequência de introdução ===
 
     private playIntroSequence(): void {
         this.tweens.add({
             targets: this.morphingSprite,
             alpha: 1,
-            duration: 2000,
+            duration: this.INTRO_TWEEN_DURATION,
             onComplete: () => {
                 this.morphingSprite.play('morph');
                 this.animateMorphingSprite();
@@ -94,23 +141,9 @@ export default class BootScene extends Scene {
         this.tweens.add({
             targets: this.morphingSprite,
             scale: 0.35,
-            duration: 7000,
+            duration: this.SCALE_ANIM_DURATION,
             ease: 'Sine.easeInOut'
         });
-    }
-
-    private createCopyrightText(): void {
-        this.copyrightText = this.add.text(
-            this.scale.width / 2,
-            this.scale.height - 55,
-            'Papai Lion\nIndie Games\n\nTODOS OS DIREITOS RESERVADOS',
-            {
-                fontFamily: 'monospace',
-                fontSize: '8px',
-                color: '#FFFFFF',
-                align: 'center'
-            }
-        ).setOrigin(0.5).setAlpha(0);
     }
 
     private revealCopyright(): void {
@@ -134,16 +167,17 @@ export default class BootScene extends Scene {
             targets: [this.morphingSprite, this.copyrightText],
             alpha: 0,
             duration: 2000,
-            delay: 5000
+            delay: this.COPYRIGHT_FADE_DELAY
         });
 
-        this.time.delayedCall(9000, () => this.scene.start('MenuScene'));
+        this.time.delayedCall(this.LOOP_START_DELAY, () => this.scene.start('MenuScene'));
     }
 
-    private generateFrames(start: number, end: number): { key: string }[] {
-        return Array.from({ length: end - start + 1 }, (_, i) => {
-            const frame = (i + start).toString().padStart(3, '0');
-            return { key: `frame_${frame}` };
-        });
+    // === Pular introdução ===
+
+    private skipIntro(): void {
+        this.sound.stopAll();
+        this.tweens.killAll();
+        this.scene.start('MenuScene');
     }
-} 
+}

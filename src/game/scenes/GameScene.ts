@@ -1,33 +1,13 @@
 // Escritório Corporativo da Corporação Caiçara - Torre Principal (Andar 87)
 // SantosPunk 2099
 
-import { Scene, GameObjects, Physics, Input, Types } from 'phaser';
 import { GBPipeline } from '../effects/GBPipeline';
 import { GBEffect } from '../effects/GBEffect';
-import { GBC_COLORS } from '../config/colors';
 import { CorporateOffice, SANTOSPUNK_CORPORATE_OFFICE, renderOfficeState } from '../config/office';
 import { BaseScene } from './BaseScene';
 import { NPCConfig } from '../controllers/NPCController';
-import { InteractionController } from '../controllers/InteractionController';
+import InteractionController from '../controllers/InteractionController';
 import { DialogBox } from '../components/DialogBox';
-import { NPCController } from '../controllers/NPCController';
-import { PlayerController } from '../controllers/PlayerController';
-
-// Interfaces para melhor tipagem
-interface MapLayers {
-  wallsLayer: GameObjects.Container;
-  floorLayer: GameObjects.Container;
-  objectsLayer: GameObjects.Container;
-}
-
-interface NPCData {
-    id: string;
-    name: string;
-    position: {x: number, y: number};
-    implants: string[];
-    clearance: string;
-    dialog: string[];
-}
 
 export default class GameScene extends BaseScene {
   private office: CorporateOffice;
@@ -58,14 +38,20 @@ export default class GameScene extends BaseScene {
     this.securityLevel = this.office.META_DATA.securityLevel;
   }
 
-  init(data: { fromRight?: boolean }): void {
-    if (data?.fromRight && this.playerController) {
-        const map = this.make.tilemap({ key: 'mapa' });
-        const player = this.playerController.getPlayer();
-        if (player?.sprite) {
-            player.sprite.x = map.widthInPixels - 32;
-            player.sprite.y = map.heightInPixels / 2;
-        }
+  init(data: { fromVaranda?: boolean }): void {
+    if (data?.fromVaranda) {
+        // Wait for the map to be created in the next frame
+        this.events.once('create', () => {
+            const map = this.make.tilemap({ key: 'mapa' });
+            const player = this.playerController?.getPlayer();
+            if (player?.sprite) {
+                // Position player at the right edge of the map, slightly inset
+                player.sprite.x = map.widthInPixels - (2 * map.tileWidth); // Two tiles from the right edge
+                player.sprite.y = map.heightInPixels / 2; // Middle of the map vertically
+                // Make sure player is facing left when entering
+                player.sprite.setFlipX(true);
+            }
+        });
     }
   }
 
@@ -85,7 +71,8 @@ export default class GameScene extends BaseScene {
     this.load.image('chair', `${publicUrl}/assets/chair.svg`);
     this.load.image('terminal', `${publicUrl}/assets/terminal.svg`);
     this.load.image('elevator', `${publicUrl}/assets/elevator.svg`);
-    this.load.audio('techno', `${publicUrl}/assets/lesbica_futurista.mp3`);
+    this.load.audio('lesbica_futurista', `${publicUrl}/assets/lesbica_futurista.mp3`);
+    this.load.image('heric', `${publicUrl}/assets/hericrosto.png`);
   }
 
   private setupAssetLoading(): void {
@@ -93,7 +80,7 @@ export default class GameScene extends BaseScene {
       console.log(`Asset carregado: ${key}`);
     });
     
-    this.load.on('loaderror', (fileObj: Types.Loader.FileConfig) => {
+    this.load.on('loaderror', (fileObj: Phaser.Types.Loader.FileConfig) => {
       console.error(`Erro ao carregar asset: ${fileObj.key}`);
     });
   }
@@ -149,6 +136,19 @@ export default class GameScene extends BaseScene {
 
     // Setup event listeners after everything is initialized
     this.setupWindowEvents();
+    // Mostrar diálogo inicial de pensamento
+    new DialogBox({
+      scene: this,
+      x: this.cameras.main.width / 2,
+      y: this.cameras.main.height - 60,
+      width: this.cameras.main.width * 0.9,
+      height: 80,
+      dialog: "\nVocê acorda com uma dor de cabeça lancinante e amnésia, não se lembra de nada que aconteceu no dia anterior...",
+      dialogColor: 0x1a237e, // Cor azul
+      portrait: 'heric',
+      portraitScale: 2,
+      autoClose: false
+    });
   }
 
   private setupPixelPerfectRendering(): void {

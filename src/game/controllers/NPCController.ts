@@ -1,4 +1,4 @@
-import { Scene, GameObjects, Physics } from 'phaser';
+import { Scene, Physics } from 'phaser';
 import { NPC } from '../scenes/BaseScene';
 import { DialogBox } from '../components/DialogBox';
 import { InteractionMenu } from '../components/InteractionMenu';
@@ -23,6 +23,7 @@ export class NPCController {
     private currentMenu?: InteractionMenu;
     private readonly interactionDistance: number = 50;
     private isInteracting: boolean = false;
+    private isNPCAwake: boolean = false;
 
     constructor(scene: Scene) {
         this.scene = scene;
@@ -116,10 +117,11 @@ export class NPCController {
                 onSelect: () => {
                     console.log('[NPCController] Opção "Olhar" selecionada para:', config.name);
                     this.currentMenu?.close();
-                    this.showDialog(`Você observa ${config.name}. Ele está dormindo profundamente... lembra muito o Snorlax naquele outro jogo.`, {
+                    this.showDialog(`\nVocê observa ${config.name}. que está dormindo profundamente... \nlembra muito o Snorlax naquele outro jogo.`, {
                         portrait: config.spriteKey === 'lion' ? 'lionface' : undefined,
                         name: config.name,
-                        color: 0xe43675
+                        color: 0xe43675,
+                        portraitScale: 0.5
                     });
                 }
             },
@@ -129,10 +131,11 @@ export class NPCController {
                 onSelect: () => {
                     console.log('[NPCController] Opção "Falar" selecionada para:', config.name);
                     this.currentMenu?.close();
-                    this.showDialog('não dá pra falar com ele, esta dormindo como uma pedra', {
+                    this.showDialog('\nNão dá pra falar com ele, esta dormindo como uma pedra', {
                         portrait: config.spriteKey === 'lion' ? 'lionface' : undefined,
                         name: config.name,
-                        color: 0xe43675
+                        color: 0xe43675,
+                        portraitScale: 0.5
                     });
                 }
             },
@@ -142,10 +145,11 @@ export class NPCController {
                 onSelect: () => {
                     console.log('[NPCController] Opção "Bater" selecionada para:', config.name);
                     this.currentMenu?.close();
-                    this.showDialog(`não vou bater no ${config.name}. Ele é meu amigo.`, {
+                    this.showDialog(`\nnão vou bater no ${config.name}. Ele é meu amigo.`, {
                         portrait: config.spriteKey === 'lion' ? 'lionface' : undefined,
                         name: config.name,
-                        color: 0xe43675
+                        color: 0xe43675,
+                        portraitScale: 1
                     });
                 }
             },
@@ -155,10 +159,11 @@ export class NPCController {
                 onSelect: () => {
                     console.log('[NPCController] Opção "Chutar" selecionada para:', config.name);
                     this.currentMenu?.close();
-                    this.showDialog(`Você ia chutar ${config.name}, mas desiste no último momento. Afinal, que tipo de pessoa chutaria alguém que está dormindo tão tranquilamente?`, {
+                    this.showDialog(`\nVocê considera chutar ${config.name}, mas desiste no último momento. \n Afinal, ele é seu amigo...`, {
                         portrait: config.spriteKey === 'lion' ? 'lionface' : undefined,
                         name: config.name,
-                        color: 0xe43675
+                        color: 0xe43675,
+                        portraitScale: 0.5
                     });
                 }
             },
@@ -193,6 +198,7 @@ export class NPCController {
             portrait?: string;
             name?: string;
             color?: number;
+            portraitScale?: number;
         } = {}
     ): void {
         if (this.dialogActive) return;
@@ -201,16 +207,17 @@ export class NPCController {
         const screenWidth = this.scene.cameras.main.width;
         const screenHeight = this.scene.cameras.main.height;
         const x = screenWidth / 2;
-        const y = screenHeight - 80;
+        const y = screenHeight - 90;
 
         this.currentDialog = new DialogBox({
             scene: this.scene,
             x,
             y,
-            width: screenWidth * 0.9,
+            width: screenWidth * 1,
             height: 120,
             dialog,
             portrait: options.portrait,
+            portraitScale: options.portraitScale || 0.5, // Default to scale 2
             name: options.name,
             dialogColor: options.color ?? 0xe43675,
             textColor: '#FFFFFF',
@@ -294,5 +301,31 @@ export class NPCController {
         this.npcs.forEach(npc => {
             this.scene.physics.add.collider(playerSprite, npc.sprite);
         });
+    }
+
+    public wakeUpAngry(): void {
+        if (this.isNPCAwake) return;
+        
+        this.isNPCAwake = true;
+        const lion = this.npcs.get('exec_1');
+        if (lion) {
+            // Mostrar diálogo de raiva
+            this.showDialog('QUEM OUSOU ME ACORDAR COM ESSA MÚSICA?!?!?!', {
+                portrait: 'lionface',
+                name: 'Leão Executivo',
+                color: 0xff0000,
+                portraitScale: 0.5
+            });
+
+            // Após um pequeno delay, mostrar outro diálogo
+            this.scene.time.delayedCall(3000, () => {
+                this.showDialog('Espera... essa música... LÉSBICA FUTURISTA?!?! COMO VOCÊ ACHOU ISSO?!', {
+                    portrait: 'lionface',
+                    name: 'Leão Executivo',
+                    color: 0xff0000,
+                    portraitScale: 0.5
+                });
+            });
+        }
     }
 } 

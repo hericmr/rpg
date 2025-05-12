@@ -48,7 +48,7 @@ export class PlayerController {
         // Ajustar hitbox do jogador
         sprite.body.setSize(8, 8); // Tamanho menor para colisões mais precisas
         sprite.body.setOffset(4, 8); // Offset para centralizar a hitbox
-        
+
         this.player = {
             sprite,
             direction: 'down',

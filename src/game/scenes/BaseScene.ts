@@ -1,8 +1,7 @@
-import { Scene, GameObjects, Physics, Input } from 'phaser';
-import { DialogBox } from '../components/DialogBox';
+import { Scene, Physics } from 'phaser';
 import { PlayerController } from '../controllers/PlayerController';
 import { NPCController } from '../controllers/NPCController';
-import { InteractionController } from '../controllers/InteractionController';
+import InteractionController from '../controllers/InteractionController';
 
 export interface Player {
   sprite: Physics.Arcade.Sprite;
@@ -11,23 +10,24 @@ export interface Player {
     clearance: string;
     implants: string[];
   };
+  controller: PlayerController;
 }
 
 export interface NPC {
-  sprite: GameObjects.Sprite;
+  sprite: Phaser.GameObjects.Sprite;
   dialog: string[];
   currentDialogIndex: number;
   patrolPoints?: {x: number, y: number}[];
   currentPatrolIndex?: number;
   isMoving?: boolean;
   dialogBox?: {
-    background: GameObjects.Rectangle;
-    text: GameObjects.Text;
-    border: GameObjects.Rectangle;
-    innerBorder: GameObjects.Rectangle;
-    outerBorder: GameObjects.Rectangle;
-    faceImage?: GameObjects.Image;
-    nameText: GameObjects.Text;
+    background: Phaser.GameObjects.Rectangle;
+    text: Phaser.GameObjects.Text;
+    border: Phaser.GameObjects.Rectangle;
+    innerBorder: Phaser.GameObjects.Rectangle;
+    outerBorder: Phaser.GameObjects.Rectangle;
+    faceImage?: Phaser.GameObjects.Image;
+    nameText: Phaser.GameObjects.Text;
     timer?: Phaser.Time.TimerEvent;
   };
 }
@@ -45,8 +45,18 @@ export abstract class BaseScene extends Scene {
   }
 
   create(): void {
-    // Initialize controllers after scene is ready
+    // Try to initialize the interaction controller
+    this.tryInitializeInteractionController();
+  }
+
+  protected tryInitializeInteractionController(): void {
+    // Try to initialize
     this.interactionController.init();
+
+    // If keyboard is not available yet, retry after a short delay
+    if (!this.input?.keyboard) {
+      this.time.delayedCall(100, () => this.tryInitializeInteractionController());
+    }
   }
 
   protected setupPlayer(config: {

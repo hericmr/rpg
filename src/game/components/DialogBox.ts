@@ -5,7 +5,7 @@ interface DialogBoxOption {
   onSelect: () => void;
 }
 
-interface DialogBoxConfig {
+export interface DialogBoxConfig {
   scene: Scene;
   x: number;
   y: number;
@@ -13,12 +13,14 @@ interface DialogBoxConfig {
   height: number;
   dialog: string;
   portrait?: string;
+  portraitScale?: number;
   name?: string;
   dialogColor?: number;
   textColor?: string;
   onClose?: () => void;
   options?: DialogBoxOption[];
   autoClose?: boolean;
+  noMenuReturn?: boolean;
 }
 
 export class DialogBox {
@@ -46,10 +48,14 @@ export class DialogBox {
     const dialogColor = config.dialogColor || 0x1a237e;
     const textColor = config.textColor || '#FFFFFF';
 
+    // Ajustar posição Y para ficar na parte inferior
+    const bottomOffset = 20; // Espaço entre a caixa e a borda inferior
+    const adjustedY = this.scene.cameras.main.height - (config.height / 2) - bottomOffset;
+
     // Criar borda externa (branca)
     this.outerBorder = this.scene.add.rectangle(
       config.x,
-      config.y,
+      adjustedY,
       config.width,
       config.height,
       0xFFFFFF
@@ -60,7 +66,7 @@ export class DialogBox {
     // Criar borda interna (preta)
     this.innerBorder = this.scene.add.rectangle(
       config.x,
-      config.y,
+      adjustedY,
       config.width - 4,
       config.height - 4,
       0x000000
@@ -71,21 +77,22 @@ export class DialogBox {
     // Criar fundo colorido
     this.background = this.scene.add.rectangle(
       config.x,
-      config.y,
+      adjustedY,
       config.width - 8,
       config.height - 8,
       dialogColor
     );
     this.background.setScrollFactor(0);
     this.background.setDepth(201);
+
     // Adicionar retrato se fornecido
     if (config.portrait) {
       this.portrait = this.scene.add.image(
         config.x - (config.width / 2) + 40,
-        config.y - 10,
+        adjustedY,
         config.portrait
       );
-      this.portrait.setScale(0.8);
+      this.portrait.setScale(config.portraitScale || 1);
       this.portrait.setScrollFactor(0);
       this.portrait.setDepth(202);
     }
@@ -94,7 +101,7 @@ export class DialogBox {
     if (config.name) {
       this.nameText = this.scene.add.text(
         config.x - (config.width / 2) + (this.portrait ? 80 : 20),
-        config.y - (config.height / 2) + 20,
+        adjustedY - (config.height / 2) + 20,
         config.name,
         {
           fontSize: '14px',
@@ -109,7 +116,7 @@ export class DialogBox {
     // Criar texto do diálogo
     this.text = this.scene.add.text(
       config.x - (config.width / 2) + (this.portrait ? 80 : 20),
-      config.y,
+      adjustedY - 10,
       config.dialog,
       {
         fontSize: '10px',
@@ -118,13 +125,14 @@ export class DialogBox {
         wordWrap: { width: config.width - (this.portrait ? 100 : 40) }
       }
     );
+    this.text.setOrigin(0, 0.5);
     this.text.setScrollFactor(0);
     this.text.setDepth(202);
 
     // Se houver opções, criar botões
     if (config.options && config.options.length > 0) {
       const baseX = config.x - (config.width / 2) + (this.portrait ? 80 : 20);
-      const baseY = config.y + 40;
+      const baseY = adjustedY + 20;
       const spacing = 110;
       config.options.forEach((option, idx) => {
         const btn = this.scene.add.text(
