@@ -56,14 +56,14 @@ export const ESTADOS_DISPOSITIVOS = {
     },
     computer: {
         off: {
-            look: "\nNotebook quântico de guerra, ano 2066. Um adesivo grita: 'USADO POR MIM, PROGRAMADO POR DEISE'.",
+            look: "\n\nMeu velho Notebook de guerra, uma reliquia de 2086. Tem um adesivo: \n\nUSADO POR MIM, PROGRAMADO POR DEISE",
             use: "\nVocê liga o pC o led pisca.",
             talk: "\nTeclas antigas gemem.",
             check: "\nSapphicOS 2066. Última obra de Deise, mítica e misteriosa."
         },
         on: {
             look: "\nA tela exibe um prompt retrô, como se esperasse sua alma.",
-            use: "\nEle pede a senha... é meu computador, mas a mente falha, nao lembro a senho...",
+            use: "\nEle pede a senha... é meu computador, mas minha mente falha, que dor de cabeça, nao sei a senha...",
             talk: "\nO cooler canta em ruídos cósmicos.",
             check: "\nProtegido. Deise não deixava brechas."
         },

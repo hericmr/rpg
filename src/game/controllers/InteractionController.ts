@@ -176,7 +176,7 @@ export default class InteractionController {
                 if (!this.computerState.isUnlocked && !this.computerState.isHacked) {
                     options.push({
                         icon: '🔑',
-                        label: 'Fazer Login',
+                        label: 'Login',
                         onSelect: () => this.showPasswordPrompt()
                     });
                 } else if (this.computerState.isHacked) {
@@ -288,8 +288,16 @@ export default class InteractionController {
                 icon: '🚪',
                 label: 'Sair',
                 onSelect: () => {
-                    this.currentMenu?.close();
+                    if (this.currentMenu) {
+                        this.currentMenu.close();
+                        this.currentMenu = null;
+                    }
+                    if (this.currentDialog) {
+                        this.currentDialog.close();
+                        this.currentDialog = null;
+                    }
                     this.isInteracting = false;
+                    this.currentInteractionPoint = null;
                 }
             }
         );
@@ -510,19 +518,10 @@ export default class InteractionController {
     }
 
     private handlePasswordInput(input: string): void {
-        if (input === this.computerState.password) {
-            this.computerState.isUnlocked = true;
-            this.computerState.state = 'unlocked';
-            this.showDialog('Acesso concedido! Bem-vinda ao SapphicOS.', {
-                dialogColor: 0xff1493,
-                autoClose: true
-            });
-            this.showAchievement('🔓 Login Sapphic: Sistema desbloqueado com sucesso!');
-        } else {
-            this.showDialog('Senha incorreta. Tente novamente ou... talvez um método mais direto?', {
-                dialogColor: 0xff0000
-            });
-        }
+        // Always show incorrect password message, regardless of input
+        this.showDialog('Senha incorreta. Tente novamente ou... talvez um método mais direto?', {
+            dialogColor: 0xff0000
+        });
     }
 
     private handleTalk(point: InteractionPoint): void {
@@ -600,7 +599,10 @@ export default class InteractionController {
         
         this.isPaired = true;
         this.jblState.state = 'paired';
+        // Preserve the hacked state when pairing
+        const wasHacked = this.computerState.isHacked;
         this.computerState.state = 'paired';
+        this.computerState.isHacked = wasHacked;
         this.showAchievement(MENSAGENS_CONQUISTA.connected);
         
         this.showDialog(ESTADOS_DISPOSITIVOS.jbl.paired.look, {
@@ -608,10 +610,12 @@ export default class InteractionController {
             autoClose: true
         });
 
-        // Try to autoplay music after a short delay
-        this.scene.time.delayedCall(2100, () => {
-            this.tryAutoPlayMusicAfterHack();
-        });
+        // Try to autoplay music after a short delay if computer was hacked
+        if (wasHacked) {
+            this.scene.time.delayedCall(2100, () => {
+                this.tryAutoPlayMusicAfterHack();
+            });
+        }
     }
 
     private canConnect(): boolean {

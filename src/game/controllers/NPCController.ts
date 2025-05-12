@@ -149,7 +149,7 @@ export class NPCController {
                         portrait: config.spriteKey === 'lion' ? 'lionface' : undefined,
                         name: config.name,
                         color: 0xe43675,
-                        portraitScale: 1
+                        portraitScale: 0.5
                     });
                 }
             },
