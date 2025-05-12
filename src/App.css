@@ -29,6 +29,15 @@
   image-rendering: pixelated;
 }
 
+/* Estilo específico para a VideoScene */
+#game-container.video-scene {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  background: #000;
+}
+
 .start-screen {
   color: white;
   text-align: center;

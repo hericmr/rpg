@@ -11,6 +11,7 @@ export default class MenuScene extends Scene {
     private xumbro!: GameObjects.Image;
     private yearCounter!: GameObjects.Text;
     private yearValue: number = 0;
+    private isActive: boolean = false;
 
     constructor() {
         super({ key: 'MenuScene' });
@@ -28,6 +29,7 @@ export default class MenuScene extends Scene {
     }
 
     create(): void {
+        this.isActive = true;
         // Start music immediately
         this.menuMusic = this.sound.add('menuMusic', { volume: 0.3, loop: true });
         this.menuMusic.play();
@@ -185,7 +187,7 @@ export default class MenuScene extends Scene {
                 duration: 500,
                 ease: 'Power2',
                 onComplete: () => {
-                    this.menuMusic.stop();
+                    this.menuMusic?.stop();
                     this.scene.start('VideoScene');
                 }
             });
@@ -197,29 +199,43 @@ export default class MenuScene extends Scene {
     private createButton(): void {
         const screenWidth = this.cameras.main.width;
         const screenHeight = this.cameras.main.height;
-        this.button = this.add.image(screenWidth / 2, screenHeight * 0.85, 'button').setVisible(false);
+        
+        // Criar o botão
+        this.button = this.add.image(screenWidth / 2, screenHeight * 0.85, 'button');
         this.button.setScale(0.5);
         this.button.setAlpha(1);
-        this.button.setInteractive();
         
+        // Configurar interatividade corretamente
+        this.button.setInteractive({
+            useHandCursor: true,
+            pixelPerfect: true
+        });
+        
+        // Criar o efeito de brilho
         const buttonGlow = this.add.graphics();
-        buttonGlow.lineStyle(1, 0x00ff00, 0.3);
-        buttonGlow.strokeRoundedRect(
-            this.button.x - (this.button.displayWidth / 2) - 2,
-            this.button.y - (this.button.displayHeight / 2) - 2,
-            this.button.displayWidth + 4,
-            this.button.displayHeight + 4,
-            4
-        );
+        const updateGlow = () => {
+            buttonGlow.clear();
+            buttonGlow.lineStyle(1, 0x00ff00, 0.3);
+            buttonGlow.strokeRoundedRect(
+                this.button.x - (this.button.displayWidth / 2) - 2,
+                this.button.y - (this.button.displayHeight / 2) - 2,
+                this.button.displayWidth + 4,
+                this.button.displayHeight + 4,
+                4
+            );
+        };
+        updateGlow();
         buttonGlow.setAlpha(0.3);
         
+        // Eventos do botão
         this.button.on('pointerover', () => {
             this.tweens.add({
                 targets: [this.button, buttonGlow],
                 scaleX: 0.6,
                 scaleY: 0.6,
                 duration: 200,
-                ease: 'Power2'
+                ease: 'Power2',
+                onUpdate: updateGlow
             });
         });
         
@@ -229,22 +245,26 @@ export default class MenuScene extends Scene {
                 scaleX: 0.5,
                 scaleY: 0.5,
                 duration: 200,
-                ease: 'Power2'
+                ease: 'Power2',
+                onUpdate: updateGlow
             });
         });
 
         this.button.on('pointerdown', () => {
-            // Flash the screen with a yellow color (RGB: 255,255,0) for 500ms
+            if (!this.isActive) return;
+            
             this.cameras.main.flash(500, 255, 255, 0);
             
             const glitchDuration = 500;
             const glitchSteps = 5;
             for (let i = 0; i < glitchSteps; i++) {
                 this.time.delayedCall(i * (glitchDuration / glitchSteps), () => {
+                    if (!this.button?.scene) return;
                     this.button.setPosition(
                         screenWidth / 2 + (Math.random() - 0.5) * 2,
                         screenHeight * 0.85 + (Math.random() - 0.5) * 2
                     );
+                    updateGlow();
                 });
             }
             
@@ -254,42 +274,52 @@ export default class MenuScene extends Scene {
                 duration: 500,
                 ease: 'Power2',
                 onComplete: () => {
-                    this.menuMusic.stop();
+                    this.menuMusic?.stop();
                     this.scene.start('VideoScene');
                 }
             });
         });
+
+        // Inicialmente invisível
+        this.button.setVisible(true);
     }
 
     private handleResize(): void {
+        if (!this.isActive || !this.cameras?.main) return;
+
         const newWidth = this.cameras.main.width;
         const newHeight = this.cameras.main.height;
         
+        if (!this.background?.scene) return;
+
         this.background.setPosition(newWidth / 2, newHeight / 2);
         this.background.setDisplaySize(newWidth, newHeight);
         
-        this.title.setPosition(newWidth / 2, newHeight * 0.15);
+        if (this.title?.scene) {
+            this.title.setPosition(newWidth / 2, newHeight * 0.15);
+        }
         
-        if (this.yearCounter) {
+        if (this.yearCounter?.scene) {
             this.yearCounter.setPosition(newWidth / 2, newHeight * 0.25);
         }
         
-        if (this.character && this.xumbro) {
+        if (this.character?.scene && this.xumbro?.scene) {
             this.character.setPosition(newWidth * 0.15, newHeight * 0.85);
             this.xumbro.setPosition(newWidth * 0.85, newHeight * 0.85);
         }
         
-        
-        if (this.startText) {
+        if (this.startText?.scene) {
             this.startText.setPosition(newWidth / 2, newHeight * 0.95);
         }
         
-        this.scanline.width = newWidth;
-        const scanlineGlow = this.children.list.find(
-            child => child instanceof Phaser.GameObjects.Rectangle && child !== this.scanline
-        ) as Phaser.GameObjects.Rectangle;
-        if (scanlineGlow) {
-            scanlineGlow.width = newWidth;
+        if (this.scanline?.scene) {
+            this.scanline.width = newWidth;
+            const scanlineGlow = this.children.list.find(
+                child => child instanceof Phaser.GameObjects.Rectangle && child !== this.scanline
+            ) as Phaser.GameObjects.Rectangle;
+            if (scanlineGlow?.scene) {
+                scanlineGlow.width = newWidth;
+            }
         }
     }
 
@@ -325,5 +355,11 @@ export default class MenuScene extends Scene {
         };
 
         updateCounter();
+    }
+
+    shutdown(): void {
+        this.isActive = false;
+        this.scale.off('resize', this.handleResize, this);
+        this.menuMusic.stop();
     }
 } 
