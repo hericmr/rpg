@@ -36,6 +36,9 @@ export default class InteractionController {
     private playerController: PlayerController | null = null;
     private currentPasswordInput: string = '';
     private isEnteringPassword: boolean = false;
+    private upKey: Phaser.Input.Keyboard.Key | null = null;
+    private downKey: Phaser.Input.Keyboard.Key | null = null;
+    private escKey: Phaser.Input.Keyboard.Key | null = null;
 
     constructor(scene: Scene) {
         this.scene = scene;
@@ -708,20 +711,91 @@ export default class InteractionController {
             return;
         }
 
-        const options = MUSICAS_REVOLUCIONARIAS.map(song => ({
-            label: `${song.title} - ${song.artist}`,
-                onSelect: () => {
-                this.handlePlayMusic(song);
-                this.showDialog(song.description, {
-                    dialogColor: 0x0d1642,
-                    autoClose: true
-                });
-                }
-        }));
+        // Verificar se o teclado está disponível
+        if (!this.scene.input?.keyboard) {
+            console.warn('[InteractionController] Keyboard not available');
+            return;
+        }
 
-        this.showDialog('Escolha uma música para tocar:', {
+        // Criar um array com as músicas disponíveis
+        const songs = MUSICAS_REVOLUCIONARIAS;
+        let selectedIndex = 0;
+
+        // Criar o texto de seleção inicial
+        const message = 'Escolha uma música para tocar:\n\n' +
+            songs.map((song, index) => 
+                `${index === selectedIndex ? '> ' : '  '}${song.title} - ${song.artist}`
+            ).join('\n') +
+            '\n\n[↑/↓] Navegar   [ENTER] Selecionar   [ESC] Sair';
+
+        // Configurar as teclas antes de mostrar o diálogo
+        const keyboard = this.scene.input.keyboard;
+        this.upKey = keyboard.addKey('UP');
+        this.downKey = keyboard.addKey('DOWN');
+        this.enterKey = keyboard.addKey('ENTER');
+        this.escKey = keyboard.addKey('ESC');
+
+        // Função para atualizar a seleção
+        const updateSelection = () => {
+            const newMessage = 'Escolha uma música para tocar:\n\n' +
+                songs.map((song, index) => 
+                    `${index === selectedIndex ? '> ' : '  '}${song.title} - ${song.artist}`
+                ).join('\n') +
+                '\n\n[↑/↓] Navegar   [ENTER] Selecionar   [ESC] Sair';
+
+            if (this.currentDialog) {
+                this.currentDialog.updateText(newMessage);
+            }
+        };
+
+        // Adicionar event listeners
+        if (this.upKey && this.downKey && this.enterKey && this.escKey) {
+            this.upKey.on('down', () => {
+                selectedIndex = (selectedIndex - 1 + songs.length) % songs.length;
+                updateSelection();
+            });
+
+            this.downKey.on('down', () => {
+                selectedIndex = (selectedIndex + 1) % songs.length;
+                updateSelection();
+            });
+
+            this.enterKey.on('down', () => {
+                const selectedSong = songs[selectedIndex];
+                if (selectedSong) {
+                    this.handlePlayMusic(selectedSong);
+                }
+            });
+
+            this.escKey.on('down', () => {
+                if (this.currentDialog) {
+                    this.currentDialog.close();
+                }
+            });
+        }
+
+        // Mostrar o diálogo inicial
+        this.showDialog(message, {
             dialogColor: 0x0d1642,
-            options
+            onClose: () => {
+                // Limpar os event listeners quando o diálogo for fechado
+                if (this.upKey) {
+                    this.upKey.destroy();
+                    this.upKey = null;
+                }
+                if (this.downKey) {
+                    this.downKey.destroy();
+                    this.downKey = null;
+                }
+                if (this.enterKey) {
+                    this.enterKey.destroy();
+                    this.enterKey = null;
+                }
+                if (this.escKey) {
+                    this.escKey.destroy();
+                    this.escKey = null;
+                }
+            }
         });
     }
 

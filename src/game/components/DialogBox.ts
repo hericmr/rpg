@@ -187,6 +187,13 @@ export class DialogBox {
     }
   }
 
+  public updateText(newText: string): void {
+    if (!this.isActive) return;
+    
+    this.dialog = newText;
+    this.text.setText(newText);
+  }
+
   public close(): void {
     if (!this.isActive) return;
     
