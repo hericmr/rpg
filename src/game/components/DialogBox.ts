@@ -156,18 +156,18 @@ export class DialogBox {
       });
     }
 
-    // Se autoClose for true, fecha automaticamente após 2 segundos
+    // Se autoClose for true, fecha automaticamente após 4 segundos
     if (config.autoClose) {
-      this.scene.time.delayedCall(2000, () => {
+      this.scene.time.delayedCall(6000, () => {
         if (this.isActive) {
           this.destroy();
         }
       });
     }
-    // Se não houver opções e não for autoClose, usa o comportamento padrão de 6 segundos
+    // Se não houver opções e não for autoClose, usa o comportamento padrão de 10 segundos
     else if (!config.options || config.options.length === 0) {
-      // Configurar timer de 6 segundos
-      this.timer = this.scene.time.delayedCall(6000, () => {
+      // Configurar timer de 10 segundos
+      this.timer = this.scene.time.delayedCall(10000, () => {
         if (this.isActive) {
           this.destroy();
         }
