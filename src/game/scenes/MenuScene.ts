@@ -42,17 +42,17 @@ export default class MenuScene extends Scene {
      */
     preload(): void {
         try {
-            const publicUrl = process.env.PUBLIC_URL || '';
+        const publicUrl = process.env.PUBLIC_URL || '';
             
             // Carregar imagens
-            this.load.image('background', `${publicUrl}/assets/menu.png`);
-            this.load.image('title', `${publicUrl}/assets/titulo.svg`);
-            this.load.image('button', `${publicUrl}/assets/mapa.png`);
-            this.load.image('character', `${publicUrl}/assets/character.png`);
-            this.load.image('xumbro', `${publicUrl}/assets/xumbro.png`);
+        this.load.image('background', `${publicUrl}/assets/menu.png`);
+        this.load.image('title', `${publicUrl}/assets/titulo.svg`);
+        this.load.image('button', `${publicUrl}/assets/mapa.png`);
+        this.load.image('character', `${publicUrl}/assets/character.png`);
+        this.load.image('xumbro', `${publicUrl}/assets/xumbro.png`);
             
             // Carregar áudio
-            this.load.audio('menuMusic', `${publicUrl}/assets/assets_msc.wav`);
+        this.load.audio('menuMusic', `${publicUrl}/assets/assets_msc.wav`);
         } catch (error) {
             console.error('Erro ao carregar recursos:', error);
         }
@@ -93,7 +93,7 @@ export default class MenuScene extends Scene {
      */
     private createScanlineEffect(): void {
         const { width, height } = this.cameras.main;
-        
+
         this.scanline = this.add.rectangle(0, 0, width, 1, 0x00ff00, 0.3)
             .setOrigin(0, 0);
             
@@ -119,7 +119,7 @@ export default class MenuScene extends Scene {
      */
     private createTitle(): void {
         const { width, height } = this.cameras.main;
-        
+
         this.title = this.add.image(width / 2, height * 0.15, 'title')
             .setScale(this.TITLE_SCALE)
             .setAlpha(0)
@@ -178,7 +178,7 @@ export default class MenuScene extends Scene {
         // Personagem xumbro
         this.xumbro = this.add.image(width + 80, height * 0.65, 'xumbro')
             .setScale(this.CHARACTER_SCALE);
-        
+
         // Animação de entrada do personagem principal
         this.time.delayedCall(1500, () => {
             if (!this.isActive) return;
@@ -189,7 +189,7 @@ export default class MenuScene extends Scene {
                 ease: 'Expo.easeOut'
             });
         });
-        
+
         // Animação de entrada do xumbro
         this.time.delayedCall(2000, () => {
             if (!this.isActive) return;
@@ -275,7 +275,7 @@ export default class MenuScene extends Scene {
      */
     private updateButtonGlow(): void {
         if (!this.button || !this.buttonGlow) return;
-        
+
         this.buttonGlow.clear();
         this.buttonGlow.lineStyle(1, 0x00ff00, 0.3);
         this.buttonGlow.strokeRoundedRect(
@@ -338,11 +338,11 @@ export default class MenuScene extends Scene {
         if (this.input.keyboard) {
             this.input.keyboard.on('keydown-SPACE', () => {
                 if (!this.isActive || this.isTransitioning) return;
-                this.transitionToNextScene();
-            });
-        }
+            this.transitionToNextScene();
+        });
     }
-
+    }
+            
     /**
      * Transição para a próxima cena
      */
@@ -353,34 +353,34 @@ export default class MenuScene extends Scene {
         const { width, height } = this.cameras.main;
         
         // Efeito de flash na câmera
-        this.cameras.main.flash(500, 255, 255, 0);
-        
+            this.cameras.main.flash(500, 255, 255, 0);
+            
         // Efeito de tremor no botão
         for (let i = 0; i < 5; i++) {
             this.time.delayedCall(i * 100, () => {
                 if (!this.isActive) return;
                 
-                this.button.setPosition(
+                    this.button.setPosition(
                     width / 2 + (Math.random() - 0.5) * 2,
                     height * 0.85 + (Math.random() - 0.5) * 2
-                );
-            });
-        }
-        
+                    );
+                });
+            }
+            
         // Fade out de todos os elementos
-        this.tweens.add({
+            this.tweens.add({
             targets: [this.background, this.title, this.button, this.startText, 
                      this.character, this.xumbro, this.buttonGlow],
-            alpha: 0,
-            duration: 500,
-            ease: 'Power2',
-            onComplete: () => {
+                alpha: 0,
+                duration: 500,
+                ease: 'Power2',
+                onComplete: () => {
                 if (this.menuMusic) {
                     this.menuMusic.stop();
                 }
-                this.scene.start('VideoScene');
-            }
-        });
+                    this.scene.start('VideoScene');
+                }
+            });
     }
 
     /**
@@ -400,11 +400,11 @@ export default class MenuScene extends Scene {
             this.yearValue = Math.floor(progress * this.TARGET_YEAR);
             
             if (this.yearCounter) {
-                this.yearCounter.setText(this.yearValue.toString().padStart(4, '0'));
+            this.yearCounter.setText(this.yearValue.toString().padStart(4, '0'));
 
                 // Efeito de glitch ocasional
-                if (Math.random() > 0.7) {
-                    this.yearCounter.setTint(0xff00ff);
+            if (Math.random() > 0.7) {
+                this.yearCounter.setTint(0xff00ff);
                     this.time.delayedCall(50, () => {
                         if (this.yearCounter && this.isActive) {
                             this.yearCounter.clearTint();
@@ -420,7 +420,7 @@ export default class MenuScene extends Scene {
                 this.cameras.main.shake(30, 0.005);
                 
                 if (this.yearCounter) {
-                    this.yearCounter.setTint(0x00ff77);
+                this.yearCounter.setTint(0x00ff77);
                     this.time.delayedCall(100, () => {
                         if (this.yearCounter && this.isActive) {
                             this.yearCounter.clearTint();
@@ -431,7 +431,7 @@ export default class MenuScene extends Scene {
         };
 
         update();
-    }
+            }
 
     /**
      * Manipula o redimensionamento da tela
@@ -471,7 +471,7 @@ export default class MenuScene extends Scene {
         
         // Parar música
         if (this.menuMusic) {
-            this.menuMusic.stop();
+        this.menuMusic.stop();
         }
         
         // Limpar todos os temporizadores ativos

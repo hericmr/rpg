@@ -99,7 +99,7 @@ export default class VideoScene extends Scene {
 
         // Iniciar o vídeo
         this.video.play(true);
-        
+
         // Configurar o vídeo assim que estiver carregado
         this.video.once('loadeddata', () => {
             console.log('[VideoScene] Video loaded:', {
@@ -108,7 +108,7 @@ export default class VideoScene extends Scene {
                 duration: this.video.getDuration()
             });
             this.videoLoaded = true;
-            this.scaleVideoProportionally();
+        this.scaleVideoProportionally();
         });
     }
 
