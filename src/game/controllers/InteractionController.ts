@@ -259,24 +259,6 @@ export default class InteractionController {
                     onSelect: () => this.handlePick(point)
                 });
             } else {
-                if (this.computerState.isHacked && this.jblState.isBluetoothEnabled) {
-                    options.push({
-                        icon: '🎵',
-                        label: 'Tocar Lésbica Futurista',
-                        onSelect: () => {
-                            // Tenta parear automaticamente se ainda não estiver pareado
-                            if (!this.isPaired) {
-                                this.isPaired = true;
-                                this.showAchievement(MENSAGENS_CONQUISTA.connected);
-                            }
-                            // Toca a música
-                            if (MUSICAS_REVOLUCIONARIAS.length > 0) {
-                                this.handlePlayMusic(MUSICAS_REVOLUCIONARIAS[0]);
-                            }
-                        }
-                    });
-                }
-                
                 if (this.jblState.state === 'playing') {
                     options.push({
                         icon: '🔊',
