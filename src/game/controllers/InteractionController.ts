@@ -82,8 +82,31 @@ export default class InteractionController {
     }
 
     public init(): void {
-        if (this.isInitialized) {
-            return;
+        console.log('[InteractionController] Initializing...');
+        
+        // Reset state
+        this.isInitialized = false;
+        this.isInteracting = false;
+        this.currentDialog = null;
+        this.currentMenu = null;
+        this.currentInteractionPoint = null;
+        
+        // Remove any existing keyboard listeners
+        if (this.spaceKey) {
+            this.spaceKey.removeAllListeners();
+            this.spaceKey = null;
+        }
+        if (this.enterKey) {
+            this.enterKey.removeAllListeners();
+            this.enterKey = null;
+        }
+        if (this.backspaceKey) {
+            this.backspaceKey.removeAllListeners();
+            this.backspaceKey = null;
+        }
+        if (this.escapeKey) {
+            this.escapeKey.removeAllListeners();
+            this.escapeKey = null;
         }
 
         if (!this.scene.input?.keyboard) {
@@ -91,52 +114,14 @@ export default class InteractionController {
             return;
         }
 
+        console.log('[InteractionController] Setting up keyboard input');
         this.spaceKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         this.enterKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
         this.backspaceKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.BACKSPACE);
         this.escapeKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
-        
-        // Configurar listener para a tecla espaço
-        this.spaceKey.on('down', () => {
-            if (this.isInteracting) {
-                console.log('[InteractionController] Já está interagindo, menu não será aberto.');
-                return;
-            }
-            
-            const player = this.scene.children.list.find(child => 
-                child instanceof Phaser.GameObjects.Sprite && 
-                child.getData('type') === 'player'
-            ) as Phaser.GameObjects.Sprite;
-
-            if (!player) {
-                console.log('[InteractionController] Jogador não encontrado.');
-                return;
-            }
-
-            const playerX = player.x;
-            const playerY = player.y;
-
-            const nearbyPoint = this.interactionPoints.find(point => {
-                const distance = Phaser.Math.Distance.Between(
-                    playerX, playerY,
-                    point.x, point.y
-                );
-                return distance <= (point.radius || this.interactionDistance);
-            });
-
-            if (nearbyPoint) {
-                console.log('[InteractionController] Ponto de interação próximo detectado:', nearbyPoint);
-                if (nearbyPoint.requiredClearance && nearbyPoint.requiredClearance !== player.getData('clearance')) {
-                    this.showDialog("Acesso negado. Nível de autorização insuficiente.");
-                } else {
-                    this.showInteractionMenu(nearbyPoint);
-                }
-            } else {
-                console.log('[InteractionController] Nenhum ponto de interação próximo.');
-            }
-        });
 
         this.isInitialized = true;
+        console.log('[InteractionController] Initialization complete');
     }
 
     private stopMusic(): void {
@@ -1007,8 +992,15 @@ export default class InteractionController {
     }
 
     public checkInteractions(playerSprite: Phaser.GameObjects.Sprite, playerClearance: string): void {
+        if (!this.isInitialized) {
+            console.log('[InteractionController] Not initialized, reinitializing...');
+            this.init();
+            return;
+        }
+
         if (this.isInteracting || !this.spaceKey?.isDown) return;
 
+        console.log('[InteractionController] Checking interactions...');
         const playerBounds = playerSprite.getBounds();
 
         for (const point of this.interactionPoints) {
@@ -1020,6 +1012,7 @@ export default class InteractionController {
             );
 
             if (distance <= (point.radius || this.interactionDistance)) {
+                console.log('[InteractionController] Found interaction point in range:', point.type);
                 if (point.requiredClearance && point.requiredClearance !== playerClearance) {
                     this.showDialog("Acesso negado. Nível de autorização insuficiente.");
                 } else {

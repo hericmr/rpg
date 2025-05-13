@@ -23,6 +23,9 @@ export default class VideoScene extends Scene {
         this.isActive = true;
         console.log('[VideoScene] Created');
         
+        // Stop all sounds from previous scenes
+        this.sound.stopAll();
+        
         // Configurar input primeiro
         this.keySpace = this.input.keyboard!.addKey('SPACE');
         this.input.keyboard!.enabled = true;

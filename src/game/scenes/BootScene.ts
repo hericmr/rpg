@@ -103,11 +103,10 @@ export default class BootScene extends Scene {
             ...Array(this.FRAME_HOLD).fill({ key: 'frame_049' })
         ], -1);
     }
-
     private createCopyrightText(): void {
         this.copyrightText = this.add.text(
             this.scale.width / 2,
-            this.scale.height - 40,
+            this.scale.height - 170, // Moved up by adjusting y position
             '>> PAPAI LION INDIE GAMES <<\n\n\n© TODOS OS DIREITOS RESERVADOS',
             {
                 fontFamily: 'Courier New',

@@ -8,7 +8,7 @@ export const MUSICAS_REVOLUCIONARIAS: SongInfo[] = [
     {
         title: "Lésbica Futurista",
         artist: "G4B3",
-        description: "A única música que esse computador ainda toca, um hino guardado há décadas."
+        description: "um hino guardado há mais de cem anos."
     }
 ];
 
@@ -63,7 +63,7 @@ export const ESTADOS_DISPOSITIVOS = {
         },
         on: {
             look: "\nA tela exibe um prompt retrô, como se esperasse sua alma.",
-            use: "\nEle pede a senha... é meu computador, mas minha mente falha, que dor de cabeça, nao sei a senha...",
+            use: "\nEle pede a senha... é meu próprio computador, mas minha mente falha, que dor de cabeça, nao sei a senha...",
             talk: "\nO cooler canta em ruídos cósmicos.",
             check: "\nProtegido. Deise não deixava brechas."
         },
@@ -75,8 +75,8 @@ export const ESTADOS_DISPOSITIVOS = {
         },
         hacked: {
             look: "\nCódigos saltam na tela como se estivessem vivos. Matrix em technicolor.",
-            use: "\nModo administrador: ON. O universo obedece.",
-            talk: "\nEntre os bits, sussurros de outra dimensão.",
+            use: "\n Você chutou o computador ele pisca luzes neon e parece vocẽ desbloqueou o acesso ao sistema.",
+            talk: "\nO computador está com um sistema de segurança muito forte, preciso desbloquear o sistema para poder usar o computador.",
             check: "\nKernel comprometido com estilo."
         },
         paired: {
