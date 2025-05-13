@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.1" orientation="orthogonal" renderorder="right-down" width="40" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="15" nextobjectid="7">
+<map version="1.10" tiledversion="1.11.1" orientation="orthogonal" renderorder="right-down" width="40" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="18" nextobjectid="11">
+ <editorsettings>
+  <export target="escritorio.json" format="json"/>
+ </editorsettings>
  <tileset firstgid="1" name="Interior general" tilewidth="16" tileheight="16" tilecount="8032" columns="16">
   <image source="Interior general.png" width="256" height="8032"/>
  </tileset>
@@ -256,8 +259,23 @@
    <point/>
   </object>
  </objectgroup>
+ <objectgroup id="15" name="videogame">
+  <object id="7" x="32" y="45">
+   <point/>
+  </object>
+ </objectgroup>
  <objectgroup id="13" name="Char_start_place">
   <object id="6" x="451.368" y="289.684">
+   <point/>
+  </object>
+ </objectgroup>
+ <objectgroup id="16" name="vigilancia">
+  <object id="8" x="222" y="46">
+   <point/>
+  </object>
+ </objectgroup>
+ <objectgroup id="17" name="energia">
+  <object id="10" x="574" y="17">
    <point/>
   </object>
  </objectgroup>

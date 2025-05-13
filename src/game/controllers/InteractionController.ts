@@ -310,10 +310,10 @@ export default class InteractionController {
         let title = '';
         switch (point.type) {
             case 'jbl':
-                title = 'JBL Overclocked';
+                title = 'Overclocked JBL';
                 break;
             case 'computador':
-                title = `SapphicOS Terminal - ${this.getComputerStatusText()}`;
+                title = `POPos Terminal - ${this.getComputerStatusText()}`;
                 break;
             default:
                 title = point.type || 'Objeto';
