@@ -21,16 +21,14 @@ export interface PlayerConfig {
 export class PlayerController {
     private scene: Scene;
     private player!: Player;
-    private cursors: {
-        left?: Input.Keyboard.Key;
-        right?: Input.Keyboard.Key;
-        up?: Input.Keyboard.Key;
-        down?: Input.Keyboard.Key;
-        shift?: Input.Keyboard.Key;
-    } = {};
+    private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
     private readonly NORMAL_SPEED: number;
     private readonly SPRINT_SPEED: number;
     private dialogActive: boolean = false;
+    private keyW: Phaser.Input.Keyboard.Key | undefined;
+    private keyA: Phaser.Input.Keyboard.Key | undefined;
+    private keyS: Phaser.Input.Keyboard.Key | undefined;
+    private keyD: Phaser.Input.Keyboard.Key | undefined;
 
     constructor(scene: Scene, config: PlayerConfig) {
         this.scene = scene;
@@ -117,39 +115,40 @@ export class PlayerController {
     }
 
     private setupInput(): void {
-        if (!this.scene.input.keyboard) return;
+        if (!this.scene.input?.keyboard) {
+            console.warn('[PlayerController] Keyboard not available');
+            return;
+        }
         
-        this.cursors = this.scene.input.keyboard.addKeys({
-            left: Input.Keyboard.KeyCodes.LEFT,
-            right: Input.Keyboard.KeyCodes.RIGHT,
-            up: Input.Keyboard.KeyCodes.UP,
-            down: Input.Keyboard.KeyCodes.DOWN,
-            shift: Input.Keyboard.KeyCodes.SHIFT
-        });
+        this.cursors = this.scene.input.keyboard.createCursorKeys();
+
+        this.keyW = this.scene.input.keyboard.addKey('W');
+        this.keyA = this.scene.input.keyboard.addKey('A');
+        this.keyS = this.scene.input.keyboard.addKey('S');
+        this.keyD = this.scene.input.keyboard.addKey('D');
     }
 
     public update(): void {
-        if (!this.player?.sprite || this.dialogActive) return;
+        if (!this.player?.sprite || this.dialogActive || !this.cursors) return;
 
-        const speed = this.cursors.shift?.isDown ? this.SPRINT_SPEED : this.NORMAL_SPEED;
+        const speed = this.cursors.shift.isDown ? this.SPRINT_SPEED : this.NORMAL_SPEED;
         let velocityX = 0;
         let velocityY = 0;
 
-        if (this.cursors.left?.isDown) {
+        if (this.cursors.left.isDown || this.keyA?.isDown) {
             velocityX = -speed;
             this.player.sprite.setFlipX(true);
-        } else if (this.cursors.right?.isDown) {
+        } else if (this.cursors.right.isDown || this.keyD?.isDown) {
             velocityX = speed;
             this.player.sprite.setFlipX(false);
         }
 
-        if (this.cursors.up?.isDown) {
+        if (this.cursors.up.isDown || this.keyW?.isDown) {
             velocityY = -speed;
-        } else if (this.cursors.down?.isDown) {
+        } else if (this.cursors.down.isDown || this.keyS?.isDown) {
             velocityY = speed;
         }
 
-        // Normalize diagonal movement
         if (velocityX !== 0 && velocityY !== 0) {
             velocityX *= Math.SQRT1_2;
             velocityY *= Math.SQRT1_2;
@@ -157,7 +156,6 @@ export class PlayerController {
 
         this.player.sprite.setVelocity(velocityX, velocityY);
 
-        // Update animation
         if (velocityX !== 0 || velocityY !== 0) {
             this.player.sprite.anims.play('walk', true);
         } else {
@@ -186,13 +184,29 @@ export class PlayerController {
     }
 
     public setDialogActive(active: boolean): void {
+        console.log('[PlayerController] Setting dialog active:', active);
         this.dialogActive = active;
         if (active) {
             this.player.sprite.setVelocity(0, 0);
+        } else {
+            this.setupKeyboardInput();
         }
     }
 
     public isDialogActive(): boolean {
         return this.dialogActive;
+    }
+
+    private setupKeyboardInput(): void {
+        if (!this.scene.input?.keyboard) {
+            console.warn('[PlayerController] Keyboard not available');
+            return;
+        }
+
+        this.cursors = this.scene.input.keyboard.createCursorKeys();
+        this.keyW = this.scene.input.keyboard.addKey('W');
+        this.keyA = this.scene.input.keyboard.addKey('A');
+        this.keyS = this.scene.input.keyboard.addKey('S');
+        this.keyD = this.scene.input.keyboard.addKey('D');
     }
 } 

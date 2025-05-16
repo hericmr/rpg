@@ -23,8 +23,8 @@ export interface DialogBoxConfig {
   noMenuReturn?: boolean;
 }
 
-export class DialogBox {
-  private scene: Scene;
+export class DialogBox extends Phaser.GameObjects.Container {
+  public scene: Scene;
   private outerBorder: GameObjects.Rectangle;
   private innerBorder: GameObjects.Rectangle;
   private background: GameObjects.Rectangle;
@@ -39,6 +39,8 @@ export class DialogBox {
   private onClose?: () => void;
 
   constructor(config: DialogBoxConfig) {
+    super(config.scene, config.x, config.y);
+
     this.scene = config.scene;
     this.isActive = true;
     this.dialog = config.dialog;
@@ -185,6 +187,16 @@ export class DialogBox {
         this.destroy();
       });
     }
+
+    // Adiciona indicador de espaço para fechar
+    const closeText = this.scene.add.text(0, config.height - 20, '[ESPAÇO] Fechar', {
+      fontSize: '14px',
+      color: '#ffffff',
+      align: 'right'
+    });
+    closeText.setOrigin(1, 1);
+    closeText.setPosition(config.width - 10, config.height - 5);
+    this.add(closeText);
   }
 
   public updateText(newText: string): void {

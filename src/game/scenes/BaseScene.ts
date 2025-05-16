@@ -40,7 +40,6 @@ export class BaseScene extends Scene {
 
   constructor(config: string | Phaser.Types.Scenes.SettingsConfig) {
     super(config);
-    this.interactionController = new InteractionController(this);
     this.npcController = new NPCController(this);
   }
 
@@ -49,13 +48,14 @@ export class BaseScene extends Scene {
   }
 
   protected tryInitializeInteractionController(): void {
+    if (!this.interactionController || !this.input?.keyboard) {
+      // If keyboard is not available yet, retry after a short delay
+      this.time.delayedCall(100, () => this.tryInitializeInteractionController());
+      return;
+    }
+
     // Try to initialize
     this.interactionController.init();
-
-    // If keyboard is not available yet, retry after a short delay
-    if (!this.input?.keyboard) {
-      this.time.delayedCall(100, () => this.tryInitializeInteractionController());
-    }
   }
 
   protected setupPlayer(config: {
@@ -67,8 +67,8 @@ export class BaseScene extends Scene {
     clearance?: string;
   }): void {
     this.playerController = new PlayerController(this, config);
-    // Connect the controllers
-    this.interactionController.setPlayerController(this.playerController);
+    // Create the InteractionController after PlayerController is initialized
+    this.interactionController = new InteractionController(this, this.playerController);
   }
 
   protected setupNPCs(): void {

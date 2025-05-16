@@ -1,10 +1,11 @@
-export type JBLState = 'off' | 'on' | 'bluetooth' | 'playing' | 'paired';
-export type ComputerState = 'off' | 'on' | 'unlocked' | 'hacked' | 'playing' | 'paired';
+export type JBLState = 'off' | 'on' | 'bluetooth' | 'pairing' | 'paired' | 'playing';
+export type ComputerState = 'off' | 'on' | 'pairing' | 'paired' | 'playing';
 
 export interface JBLDeviceState {
     isOn: boolean;
     state: JBLState;
     isBluetoothEnabled: boolean;
+    isPairingMode: boolean;
     volume: number;
 }
 
@@ -13,6 +14,8 @@ export interface ComputerDeviceState {
     state: ComputerState;
     isUnlocked: boolean;
     isHacked: boolean;
+    isKicked: boolean;
+    isPairingMode: boolean;
     password: string;
 }
 
@@ -40,6 +43,7 @@ class GameState {
         isOn: false,
         state: 'off',
         isBluetoothEnabled: false,
+        isPairingMode: false,
         volume: 0.6
     };
 
@@ -48,6 +52,8 @@ class GameState {
         state: 'off',
         isUnlocked: false,
         isHacked: false,
+        isKicked: false,
+        isPairingMode: false,
         password: 'sapphic_future_2025'
     };
 
@@ -77,8 +83,43 @@ class GameState {
     }
 
     // Setters with state synchronization
+    private updateJBLState(): void {
+        const jbl = this._jblState;
+
+        if (!jbl.isOn) {
+            jbl.state = 'off';
+        } else if (this._musicState.isPlaying) {
+            jbl.state = 'playing';
+        } else if (this._isPaired) {
+            jbl.state = 'paired';
+        } else if (jbl.isPairingMode) {
+            jbl.state = 'pairing';
+        } else if (jbl.isBluetoothEnabled) {
+            jbl.state = 'bluetooth';
+        } else {
+            jbl.state = 'on';
+        }
+    }
+
+    private updateComputerState(): void {
+        const pc = this._computerState;
+
+        if (!pc.isOn) {
+            pc.state = 'off';
+        } else if (this._musicState.isPlaying) {
+            pc.state = 'playing';
+        } else if (this._isPaired) {
+            pc.state = 'paired';
+        } else if (pc.isPairingMode) {
+            pc.state = 'pairing';
+        } else {
+            pc.state = 'on';
+        }
+    }
+
     set jblState(newState: JBLDeviceState) {
         this._jblState = newState;
+        this.updateJBLState();
         if (newState.state === 'playing') {
             this._computerState.state = 'playing';
         }
@@ -86,6 +127,7 @@ class GameState {
 
     set computerState(newState: ComputerDeviceState) {
         this._computerState = newState;
+        this.updateComputerState();
         if (newState.state === 'playing') {
             this._jblState.state = 'playing';
         }
@@ -93,10 +135,14 @@ class GameState {
 
     set musicState(newState: MusicState) {
         this._musicState = newState;
+        this.updateJBLState();
+        this.updateComputerState();
     }
 
     set isPaired(value: boolean) {
         this._isPaired = value;
+        this.updateJBLState();
+        this.updateComputerState();
     }
 
     public resetState(): void {
@@ -104,6 +150,7 @@ class GameState {
             isOn: false,
             state: 'off',
             isBluetoothEnabled: false,
+            isPairingMode: false,
             volume: 0.6
         };
 
@@ -112,6 +159,8 @@ class GameState {
             state: 'off',
             isUnlocked: false,
             isHacked: false,
+            isKicked: false,
+            isPairingMode: false,
             password: 'sapphic_future_2025'
         };
 

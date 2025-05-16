@@ -2,6 +2,7 @@ import { Scene, Physics } from 'phaser';
 import { NPC } from '../scenes/BaseScene';
 import { DialogBox } from '../components/DialogBox';
 import { InteractionMenu } from '../components/InteractionMenu';
+import { MenuManager } from '../components/menu/MenuManager';
 
 export interface NPCConfig {
     id: string;
@@ -20,15 +21,17 @@ export class NPCController {
     private configs: Map<string, NPCConfig>;
     private dialogActive: boolean = false;
     private currentDialog?: DialogBox;
-    private currentMenu?: InteractionMenu;
-    private readonly interactionDistance: number = 50;
     private isInteracting: boolean = false;
     private isNPCAwake: boolean = false;
+    private menuManager: MenuManager;
+    private readonly interactionDistance: number = 50;
 
     constructor(scene: Scene) {
         this.scene = scene;
         this.npcs = new Map();
         this.configs = new Map();
+        this.menuManager = MenuManager.getInstance();
+        this.menuManager.setScene(scene);
     }
 
     public addNPC(config: NPCConfig): void {
@@ -101,93 +104,52 @@ export class NPCController {
     private showInteractionMenu(config: NPCConfig, npc: NPC): void {
         console.log('[NPCController] Abrindo menu de interação para:', config.name);
         
-        // Fecha qualquer menu ou diálogo existente
-        if (this.currentMenu) {
-            this.currentMenu.close();
-        }
-        if (this.currentDialog) {
-            this.currentDialog.close();
-        }
+        // Get menu position
+        const position = {
+            x: this.scene.cameras.main.width / 2,
+            y: this.scene.cameras.main.height - 60
+        };
 
-        this.isInteracting = true;
-        const options = [
-            {
-                icon: '👁️',
-                label: 'Olhar',
-                onSelect: () => {
-                    console.log('[NPCController] Opção "Olhar" selecionada para:', config.name);
-                    this.currentMenu?.close();
-                    this.showDialog(`\nVocê observa ${config.name}. que está dormindo profundamente... \nlembra muito o Snorlax naquele outro jogo.`, {
+        // Show menu with NPC data
+        this.menuManager.showMenu('npc', position, {
+            config,
+            npc,
+            onLook: () => {
+                this.menuManager.closeCurrentMenu();
+                this.showDialog(`\n${config.name} está ${this.isNPCAwake ? 'acordado e irritado' : 'dormindo profundamente'}.`, {
+                    portrait: config.spriteKey,
+                    name: config.name,
                         color: 0x0d1642,
-                        portrait: 'heric',
-                        name: 'Você',
                         portraitScale: 2
                     });
-                }
             },
-            {
-                icon: '👄',
-                label: 'Falar',
-                onSelect: () => {
-                    console.log('[NPCController] Opção "Falar" selecionada para:', config.name);
-                    this.currentMenu?.close();
-                    this.showDialog('\nNão dá pra falar com ele, esta dormindo como uma pedra', {
+            onTalk: () => {
+                this.menuManager.closeCurrentMenu();
+                const dialogIndex = Math.floor(Math.random() * config.dialog.length);
+                this.showDialog(config.dialog[dialogIndex], {
+                    portrait: config.spriteKey,
+                    name: config.name,
                         color: 0x0d1642,
-                        portrait: 'heric',
-                        name: 'Você',
                         portraitScale: 2
                     });
-                }
             },
-            {
-                icon: '👊',
-                label: 'Bater',
-                onSelect: () => {
-                    console.log('[NPCController] Opção "Bater" selecionada para:', config.name);
-                    this.currentMenu?.close();
+            onPunch: () => {
+                this.menuManager.closeCurrentMenu();
                     this.showDialog(`\nnão vou bater no ${config.name}. Ele é meu amigo.`, {
                         portrait: 'heric',
                         name: 'Você',
                         color: 0x0d1642,
                         portraitScale: 2
                     });
-                }
             },
-            {
-                icon: '👢',
-                label: 'Chutar',
-                onSelect: () => {
-                    console.log('[NPCController] Opção "Chutar" selecionada para:', config.name);
-                    this.currentMenu?.close();
+            onKick: () => {
+                this.menuManager.closeCurrentMenu();
                     this.showDialog(`\nVocê considera chutar ${config.name}, mas desiste no último momento. \n Afinal, ele é seu amigo...`, {
                         portrait: 'heric',
                         name: 'Você',
                         color: 0x0d1642,
                         portraitScale: 2
                     });
-                }
-            },
-            {
-                icon: '🚪',
-                label: 'Sair',
-                onSelect: () => {
-                    console.log('[NPCController] Opção "Sair" selecionada para:', config.name);
-                    this.currentMenu?.close();
-                    this.isInteracting = false;
-                }
-            }
-        ];
-
-        this.currentMenu = new InteractionMenu({
-            scene: this.scene,
-            x: this.scene.cameras.main.width / 2,
-            y: this.scene.cameras.main.height - 60,
-            options,
-            title: config.name,
-            onClose: () => {
-                console.log('[NPCController] Menu fechado para:', config.name);
-                this.isInteracting = false;
-                this.currentMenu = undefined;
             }
         });
     }
@@ -325,5 +287,10 @@ export class NPCController {
                 });
             });
         }
+    }
+
+    public cleanupInteractionState(): void {
+        this.isInteracting = false;
+        this.menuManager.closeCurrentMenu();
     }
 } 
