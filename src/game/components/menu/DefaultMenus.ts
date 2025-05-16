@@ -1,4 +1,4 @@
-import { MenuRegistry, MenuConfig, MenuOption } from './MenuRegistry';
+import { MenuRegistry, MenuOption } from './MenuRegistry';
 import GameState from '../../state/GameState';
 import { ESTADOS_DISPOSITIVOS } from '../../config/estadosTransitorios';
 
@@ -116,34 +116,6 @@ export function registerDefaultMenus(gameState: GameState): void {
                 onSelect: () => {
                     gameState.jblState.isPairingMode = false;
                     console.log('[JBL] ' + ESTADOS_DISPOSITIVOS.jbl.bluetooth.use);
-                },
-            },
-            {
-                icon: '▶️',
-                label: 'Tocar Música',
-                order: 10,
-                condition: () => (
-                    gameState.jblState.isOn &&
-                    gameState.isPaired &&
-                    !gameState.musicState.isPlaying
-                ),
-                onSelect: () => {
-                    gameState.musicState.isPlaying = true;
-                    gameState.jblState.state = 'playing';
-                    gameState.computerState.state = 'playing';
-                    console.log('[JBL] ' + ESTADOS_DISPOSITIVOS.jbl.playing.use);
-                },
-            },
-            {
-                icon: '⏹️',
-                label: 'Parar Música',
-                order: 11,
-                condition: () => gameState.musicState.isPlaying,
-                onSelect: () => {
-                    gameState.musicState.isPlaying = false;
-                    gameState.jblState.state = 'paired';
-                    gameState.computerState.state = 'paired';
-                    console.log('[JBL] ' + ESTADOS_DISPOSITIVOS.jbl.paired.use);
                 },
             }
         ],

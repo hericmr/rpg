@@ -7,8 +7,8 @@ export interface SongInfo {
 export const MUSICAS_REVOLUCIONARIAS: SongInfo[] = [
     {
         title: "Lésbica Futurista",
-        artist: "G4B3",
-        description: "Esse hito tem mais de cem anos."
+        artist: "Deise",
+        description: "Uma batida techno que faz as paredes tremerem"
     }
 ];
 
@@ -30,7 +30,7 @@ export const ESTADOS_DISPOSITIVOS = {
             check: "\nSistema de som modificado clandestinamente. Potencial além do esperado."
         },
         on: {
-            look: "\nessa JBL é BRabA, atinge 99 mil decibeis JBL pulsa com vida, padrões hipnóticos de luz emanando dela.",
+            look: "\nA JBL pulsa com vida, padrões hipnóticos de luz emanando dela.",
             use: "\nBluetooth não está ativo. Talvez haja algum método para ativar...",
             talk: "\nEssa é a braba...",
             check: "\nBluetooth inativo. Sistema aguardando ativação."
