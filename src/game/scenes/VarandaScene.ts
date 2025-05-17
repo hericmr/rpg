@@ -1,3 +1,4 @@
+import { Scene } from 'phaser';
 import { GameObjects, Physics, Input } from 'phaser';
 import { GBPipeline } from '../effects/GBPipeline';
 import { GBEffect } from '../effects/GBEffect';
@@ -36,6 +37,7 @@ export default class VarandaScene extends BaseScene {
         console.log('Tentando carregar spritesheet do player:', `${publicUrl}/assets/heric2.png`);
         this.load.spritesheet('player', `${publicUrl}/assets/heric2.png`, { frameWidth: 16, frameHeight: 16 });
         this.load.image('player_portrait', `${publicUrl}/assets/heric2.png`);
+        this.load.image('cidade', `${publicUrl}/assets/cidade.png`);
     }
 
     create(): void {

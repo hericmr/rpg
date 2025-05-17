@@ -281,4 +281,33 @@ export function registerDefaultMenus(gameState: GameState): void {
             console.log('[Menu] Thought menu closed');
         }
     });
+
+    // Menu do Telescópio
+    registry.registerMenu({
+        type: 'telescopio',
+        title: '🔭 Telescópio',
+        baseOptions: [
+            {
+                icon: '👁️',
+                label: 'Olhar',
+                order: 1,
+                onSelect: () => {},
+            },
+            {
+                icon: '🔍',
+                label: 'Examinar',
+                order: 2,
+                onSelect: () => {},
+            },
+            {
+                icon: '📝',
+                label: 'Status',
+                order: 3,
+                onSelect: () => {},
+            }
+        ],
+        onClose: () => {
+            console.log('[Menu] Telescope menu closed');
+        }
+    });
 } 

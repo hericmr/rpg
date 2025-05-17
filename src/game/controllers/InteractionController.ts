@@ -6,6 +6,7 @@ import GameState, { JBLDeviceState, ComputerDeviceState, MusicState } from '../s
 import { PlayerController } from './PlayerController';
 import { MenuManager } from '../components/menu/MenuManager';
 import { registerDefaultMenus } from '../components/menu/DefaultMenus';
+import { TelescopeView } from '../components/TelescopeView';
 
 export interface InteractionPoint {
     x: number;
@@ -187,8 +188,8 @@ export default class InteractionController {
             this.cleanupInteractionState();
         }
 
-        // Se for telescópio ou vaso, mostrar diálogo direto
-        if (point.type === 'telescopio' || point.type === 'vaso') {
+        // Se for vaso, mostrar diálogo direto
+        if (point.type === 'vaso') {
             this.handleLook(point);
             return;
         }
@@ -208,8 +209,10 @@ export default class InteractionController {
             point,
             gameState: this.gameState,
             
-            // Ações comuns
+            // Ações comuns e do Telescópio
             onLook: () => this.handleLook(point),
+            onExamine: () => this.handleTelescopeExamine(point),
+            onStatus: () => this.handleTelescopeStatus(point),
             
             // Ações da JBL e Computador
             onPick: () => this.handlePick(point),
@@ -236,49 +239,10 @@ export default class InteractionController {
             onStopMusic: () => this.stopMusic(),
             
             // Ações específicas do Computador
-            onUnlock: () => this.showPasswordPrompt(),
-            onHack: () => {
-                this.currentMenu?.close();
-                if (point.type === 'computador') {
-                    this.computerState.isKicked = true;
-                    if (this.computerState.isOn) {
-                        this.computerState.isHacked = true;
-                        this.computerState.state = 'on';
-                        this.showDialog('Você chuta o computador com força!\n*CRASH*\nO sistema foi hackeado!', {
-                            dialogColor: 0x0d1642,
-                            portrait: 'computer',
-                            name: 'Computador',
-                            autoClose: true
-                        });
-                    } else {
-                        this.showDialog('Você chuta o computador!\nMelhor ligá-lo primeiro...', {
-                            dialogColor: 0x0d1642,
-                            portrait: 'computer',
-                            name: 'Computador',
-                            autoClose: true
-                        });
-                    }
-                }
-            },
-            
-            // Ações de NPC
-            onTalk: () => this.handleTalk(point),
-            onStatus: () => this.handleCheck(point),
-            onProvoke: () => {
-                this.showDialog('Você provoca o NPC com a música alta...', {
-                    dialogColor: 0xff0000,
-                    autoClose: true,
-                    onClose: () => {
-                        const npcController = (this.scene as any).npcController;
-                        if (npcController) {
-                            npcController.wakeUpAngry();
-                        }
-                    }
-                });
-            }
+            onUnlock: () => this.showPasswordPrompt()
         };
 
-        // Show menu with current point data
+        // Show appropriate menu based on point type
         this.menuManager.showMenu(point.type, position, menuData);
     }
 
@@ -365,11 +329,35 @@ export default class InteractionController {
         }
 
         if (point.type === 'telescopio') {
-            this.showDialog('Você olha através do telescópio e vê o horizonte de Santos. O mar se estende até onde a vista alcança, e os prédios antigos da cidade se misturam com as estruturas futuristas.', {
+            // Criar instância do TelescopeView
+            const telescopeView = new TelescopeView({
+                scene: this.scene,
+                imageKey: 'cidade',
+                radius: 150,
+                panSpeed: 5,
+                maxOffset: 200,
+                borderColor: 0xFFFFFF,
+                crosshairColor: 0xFFFFFF,
+                onClose: () => {
+                    this.showDialog('Você abaixa o telescópio.', {
+                        dialogColor: 0x0d1642,
+                        portrait: 'player_portrait',
+                        name: 'Você',
+                        autoClose: true
+                    });
+                }
+            });
+
+            this.showDialog('Você olha através do telescópio e vê o horizonte de Santos. O mar se estende até onde a vista alcança, e os prédios antigos da cidade se misturam com as estruturas futuristas.\n\nUse as setas do teclado para mover a vista.\nPressione [ESC] para sair.', {
                 dialogColor: 0x0d1642,
                 portrait: 'player_portrait',
                 name: 'Você',
-                autoClose: true
+                autoClose: true,
+                onClose: () => {
+                    if (!telescopeView.isViewActive()) {
+                        telescopeView.destroy();
+                    }
+                }
             });
             return;
         }
@@ -1087,5 +1075,23 @@ export default class InteractionController {
                 autoClose: true
             });
         }
+    }
+
+    private handleTelescopeExamine(point: InteractionPoint): void {
+        this.showDialog('Você examina o telescópio mais detalhadamente. É um modelo antigo, mas bem conservado. As lentes estão limpas e o mecanismo de ajuste funciona perfeitamente.', {
+            dialogColor: 0x0d1642,
+            portrait: 'player_portrait',
+            name: 'Você',
+            autoClose: true
+        });
+    }
+
+    private handleTelescopeStatus(point: InteractionPoint): void {
+        this.showDialog('Status do Telescópio:\n- Lentes: Limpas\n- Mecanismo: Funcional\n- Ajuste: Preciso\n- Última Manutenção: Recente', {
+            dialogColor: 0x0d1642,
+            portrait: 'player_portrait',
+            name: 'Você',
+            autoClose: true
+        });
     }
 } 

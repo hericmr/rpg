@@ -301,17 +301,39 @@ export default class GameScene extends BaseScene {
         { x: npcStartX, y: npcStartY + 100 }
       ];
 
+      // Customizar diálogos baseados no ID do NPC
+      let npcDialogs;
+      switch (npcData.id) {
+        case 'exec_1':
+          npcDialogs = [
+            'Zzz... não devia ter misturado pinga com absinto... ouço a voz de Gaia voltou...'
+          ];
+          break;
+        case 'security_1':
+          npcDialogs = [
+            'Ei! Esta área é restrita!'
+          ];
+          break;
+        case 'employee_1':
+          npcDialogs = [
+            'Mais um dia na Corporação loftjur...'
+          ];
+          break;
+        default:
+          npcDialogs = [
+            'Olá! Como vai?',
+            'Bastante trabalho hoje, não?',
+            'Você é novo por aqui?',
+            'Prazer em conhecê-lo!'
+          ];
+      }
+
       const npcConfig: NPCConfig = {
         id: npcData.id,
         name: npcData.name,
         spriteKey: npcData.id === 'exec_1' ? 'lion' : 'player',
         position: { x: npcStartX, y: npcStartY },
-        dialog: npcData.id === 'exec_1' ? [
-          'zzzZZ... zzzZZ... zzzZZ...*parece ate o Snorlax*',
-          'Zzz... Zzz... Zzz... *ronco profundo* Zzz...',
-          'Zzzz *dorme como uma pedra...*',
-          'Zzz... Zzz... Zzz... *ronco profundo* Zzz...'
-        ] : ['Olá!', 'Como posso ajudar?'],
+        dialog: npcDialogs,
         patrolPoints: patrolPoints,
         clearance: npcData.clearance,
         implants: npcData.implants

@@ -1,5 +1,3 @@
-import { Scene } from 'phaser';
-
 export interface MenuOption {
     icon: string;
     label: string;
@@ -63,6 +61,18 @@ export class MenuRegistry {
                         processedOption.onSelect = data.onLook;
                         break;
 
+                    // Ações do Telescópio
+                    case 'Examinar':
+                        processedOption.onSelect = data.onExamine;
+                        break;
+                    case 'Status':
+                        if (type === 'telescopio') {
+                            processedOption.onSelect = data.onStatus;
+                        } else if (type === 'npc') {
+                            processedOption.onSelect = data.onStatus;
+                        }
+                        break;
+
                     // Ações da JBL e Computador
                     case 'Ligar':
                         processedOption.onSelect = data.onPick;
@@ -119,9 +129,6 @@ export class MenuRegistry {
                     // Ações de NPC
                     case 'Conversar':
                         processedOption.onSelect = data.onTalk;
-                        break;
-                    case 'Status':
-                        processedOption.onSelect = data.onStatus;
                         break;
                     case 'Provocar':
                         processedOption.onSelect = data.onProvoke;
