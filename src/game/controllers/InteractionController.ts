@@ -336,9 +336,11 @@ export default class InteractionController {
                 radius: 150,
                 panSpeed: 5,
                 maxOffset: 200,
-                borderColor: 0xFFFFFF,
-                crosshairColor: 0xFFFFFF,
+                borderColor: 0x000000,
+                crosshairColor: 0x000000,
                 onClose: () => {
+                    this.playerController.setDialogActive(false);
+                    this.isInteracting = false;
                     this.showDialog('Você abaixa o telescópio.', {
                         dialogColor: 0x0d1642,
                         portrait: 'player_portrait',
@@ -354,9 +356,11 @@ export default class InteractionController {
                 name: 'Você',
                 autoClose: true,
                 onClose: () => {
-                    if (!telescopeView.isViewActive()) {
+                    if (telescopeView.isViewActive()) {
                         telescopeView.destroy();
                     }
+                    this.playerController.setDialogActive(false);
+                    this.isInteracting = false;
                 }
             });
             return;

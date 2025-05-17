@@ -115,7 +115,7 @@ export class TelescopeView {
         this.scopeBorder.clear();
 
         // Desenhar círculo
-        this.scopeBorder.lineStyle(2, this.config.borderColor);
+        this.scopeBorder.lineStyle(2, 0x000000);
         this.scopeBorder.beginPath();
         this.scopeBorder.arc(
             screenWidth / 2,
@@ -126,8 +126,6 @@ export class TelescopeView {
         );
         this.scopeBorder.closePath();
         this.scopeBorder.stroke();
-
-
     }
 
     private setupControls(): void {
@@ -186,11 +184,34 @@ export class TelescopeView {
 
     public destroy(): void {
         this.isActive = false;
+        
+        // Remove keyboard event listeners
+        if (this.cursors) {
+            const keyboard = this.scene.input.keyboard;
+            if (keyboard) {
+                keyboard.off('keydown-ESC');
+            }
+        }
+        
+        // Remove update event
         if (this.updateEvent) {
             this.scene.events.off('update', this.update, this);
         }
-        this.container.destroy();
-        this.mask.destroy();
+        
+        // Destroy all graphics and containers
+        if (this.mask) {
+            this.mask.destroy();
+        }
+        if (this.scopeBorder) {
+            this.scopeBorder.destroy();
+        }
+        if (this.cityImage) {
+            this.cityImage.destroy();
+        }
+        if (this.container) {
+            this.container.destroy(true);
+        }
+        
         this.config.onClose();
     }
 
