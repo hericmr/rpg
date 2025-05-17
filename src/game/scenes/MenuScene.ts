@@ -9,8 +9,6 @@ export default class MenuScene extends Scene {
     // Elementos visuais
     private background!: GameObjects.Image;
     private title!: GameObjects.Image;
-    private button!: GameObjects.Image;
-    private buttonGlow!: GameObjects.Graphics;
     private scanline!: GameObjects.Rectangle;
     private scanlineGlow!: GameObjects.Rectangle;
     private startText!: GameObjects.Text;
@@ -28,9 +26,8 @@ export default class MenuScene extends Scene {
     
     // Configurações
     private readonly TARGET_YEAR: number = 2099;
-    private readonly TITLE_SCALE: number = 0.8;
-    private readonly CHARACTER_SCALE: number = 0.5;
-    private readonly BUTTON_SCALE: number = 0.5;
+    private readonly TITLE_SCALE: number = 1;
+    private readonly CHARACTER_SCALE: number = 0.55;
     private readonly MUSIC_VOLUME: number = 0.4;
 
     constructor() {
@@ -47,7 +44,6 @@ export default class MenuScene extends Scene {
             // Carregar imagens
         this.load.image('background', `${publicUrl}/assets/menu.png`);
         this.load.image('title', `${publicUrl}/assets/titulo.svg`);
-        this.load.image('button', `${publicUrl}/assets/mapa.png`);
         this.load.image('character', `${publicUrl}/assets/character.png`);
         this.load.image('xumbro', `${publicUrl}/assets/xumbro.png`);
             
@@ -70,7 +66,6 @@ export default class MenuScene extends Scene {
         this.createTitle();
         this.createYearCounter();
         this.createCharacters();
-        this.createButton();
         this.createStartText();
         this.setupMusic();
         this.setupControls();
@@ -149,10 +144,12 @@ export default class MenuScene extends Scene {
     private createYearCounter(): void {
         const { width, height } = this.cameras.main;
         
-        this.yearCounter = this.add.text(width / 2, height * 0.30, '0000', {
-            fontSize: '9px',
+        this.yearCounter = this.add.text(width / 2.05, height * 0.31, '0000', {
+            fontSize: '25px',
             fontFamily: 'monospace',
-            color: '#00ffff'
+            color: '#ffa500',
+            stroke: '#804000',
+
         })
         .setOrigin(0.5)
         .setAlpha(0)
@@ -203,108 +200,28 @@ export default class MenuScene extends Scene {
     }
 
     /**
-     * Cria o botão principal
-     */
-    private createButton(): void {
-        const { width, height } = this.cameras.main;
-        
-        // Botão principal
-        this.button = this.add.image(width / 2, height * 0.85, 'button')
-            .setScale(this.BUTTON_SCALE)
-            .setAlpha(0)
-            .setInteractive({ useHandCursor: true });
-        
-        // Efeito de brilho ao redor do botão
-        this.buttonGlow = this.add.graphics();
-        this.updateButtonGlow();
-        this.buttonGlow.setAlpha(0.4);
-        
-        // Animação de fade-in para o botão
-        this.tweens.add({ 
-            targets: this.button, 
-            alpha: 1, 
-            duration: 600, 
-            ease: 'Sine.easeIn' 
-        });
-
-        // Interação com o mouse
-        this.setupButtonInteractions();
-    }
-
-    /**
-     * Configura as interações com o botão
-     */
-    private setupButtonInteractions(): void {
-        // Hover
-        this.button.on('pointerover', () => {
-            if (!this.isActive) return;
-            
-            this.tweens.add({
-                targets: [this.button, this.buttonGlow],
-                scaleX: this.BUTTON_SCALE + 0.1,
-                scaleY: this.BUTTON_SCALE + 0.1,
-                duration: 150,
-                ease: 'Power1',
-                onUpdate: () => this.updateButtonGlow()
-            });
-        });
-        
-        // Hover out
-        this.button.on('pointerout', () => {
-            if (!this.isActive) return;
-            
-            this.tweens.add({
-                targets: [this.button, this.buttonGlow],
-                scaleX: this.BUTTON_SCALE,
-                scaleY: this.BUTTON_SCALE,
-                duration: 150,
-                ease: 'Power1',
-                onUpdate: () => this.updateButtonGlow()
-            });
-        });
-
-        // Click
-        this.button.on('pointerdown', () => {
-            if (!this.isActive || this.isTransitioning) return;
-            this.transitionToNextScene();
-        });
-    }
-
-    /**
-     * Atualiza o brilho ao redor do botão
-     */
-    private updateButtonGlow(): void {
-        if (!this.button || !this.buttonGlow) return;
-
-        this.buttonGlow.clear();
-        this.buttonGlow.lineStyle(1, 0x00ff00, 0.3);
-        this.buttonGlow.strokeRoundedRect(
-            this.button.x - (this.button.displayWidth / 2) - 2,
-            this.button.y - (this.button.displayHeight / 2) - 2,
-            this.button.displayWidth + 4,
-            this.button.displayHeight + 4,
-            4
-        );
-    }
-
-    /**
      * Cria o texto de iniciar
      */
     private createStartText(): void {
         const { width, height } = this.cameras.main;
         
-        this.startText = this.add.text(width / 2, height * 0.95, 'APERTE ESPAÇO', {
-            fontSize: '8px',
+        this.startText = this.add.text(width / 2, height * 0.85, 'APERTE ESPAÇO', {
+            fontSize: '16px',
             fontFamily: 'monospace',
             color: '#1a3300',
             backgroundColor: '#ffff00',
-            padding: { x: 4, y: 2 },
-            fixedWidth: 90,
-            fixedHeight: 12,
+            padding: { x: 10, y: 5 },
+            fixedWidth: 150,
+            fixedHeight: 25,
             align: 'center'
         })
         .setOrigin(0.5)
-        .setAlpha(0);
+        .setAlpha(0)
+        .setDepth(10);
+        
+        // Aguardar a entrada dos outros elementos antes de mostrar o texto
+        this.time.delayedCall(3500, () => {
+            if (!this.isActive) return;
         
         // Animação de piscar
         this.tweens.add({
@@ -313,6 +230,7 @@ export default class MenuScene extends Scene {
             duration: 800,
             repeat: -1,
             yoyo: true
+            });
         });
     }
 
@@ -350,27 +268,14 @@ export default class MenuScene extends Scene {
         if (this.isTransitioning) return;
         
         this.isTransitioning = true;
-        const { width, height } = this.cameras.main;
         
         // Efeito de flash na câmera
             this.cameras.main.flash(500, 255, 255, 0);
             
-        // Efeito de tremor no botão
-        for (let i = 0; i < 5; i++) {
-            this.time.delayedCall(i * 100, () => {
-                if (!this.isActive) return;
-                
-                    this.button.setPosition(
-                    width / 2 + (Math.random() - 0.5) * 2,
-                    height * 0.85 + (Math.random() - 0.5) * 2
-                    );
-                });
-            }
-            
         // Fade out de todos os elementos
             this.tweens.add({
-            targets: [this.background, this.title, this.button, this.startText, 
-                     this.character, this.xumbro, this.buttonGlow],
+            targets: [this.background, this.title, this.startText, 
+                     this.character, this.xumbro],
                 alpha: 0,
                 duration: 500,
                 ease: 'Power2',
@@ -448,15 +353,11 @@ export default class MenuScene extends Scene {
         this.yearCounter?.setPosition(width / 2, height * 0.30);
         this.character?.setPosition(width * 0.15, height * 0.65);
         this.xumbro?.setPosition(width * 0.85, height * 0.65);
-        this.button?.setPosition(width / 2, height * 0.85);
-        this.startText?.setPosition(width / 2, height * 0.95);
+        this.startText?.setPosition(width / 2, height * 0.85);
         
         // Atualizar tamanho do scanline
         this.scanline?.setSize(width, 1);
         this.scanlineGlow?.setSize(width, 2);
-        
-        // Atualizar o brilho do botão
-        this.updateButtonGlow();
     }
 
     /**

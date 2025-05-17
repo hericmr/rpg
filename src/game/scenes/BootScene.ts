@@ -49,7 +49,7 @@ export default class BootScene extends Scene {
     }
 
     private setupCamera(): void {
-        this.cameras.main.setBackgroundColor('#01010f'); // tom escuro azulado
+        this.cameras.main.setBackgroundColor('#000000'); // black background
         this.cameras.main.flash(300, 255, 0, 255); // flash inicial tipo boot
     }
 

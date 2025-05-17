@@ -187,6 +187,12 @@ export default class InteractionController {
             this.cleanupInteractionState();
         }
 
+        // Se for telescópio ou vaso, mostrar diálogo direto
+        if (point.type === 'telescopio' || point.type === 'vaso') {
+            this.handleLook(point);
+            return;
+        }
+
         this.currentInteractionPoint = point;
         this.isInteracting = true;
         this.playerController.setDialogActive(true);
@@ -348,6 +354,26 @@ export default class InteractionController {
     private handleLook(point: InteractionPoint): void {
         this.currentMenu?.close();
         
+        if (point.type === 'vaso') {
+            this.showDialog('Um vaso bonito com uma planta exótica. Parece ser uma espécie rara de samambaia que só cresce em Santos.', {
+                dialogColor: 0x0d1642,
+                portrait: 'player_portrait',
+                name: 'Você',
+                autoClose: true
+            });
+            return;
+        }
+
+        if (point.type === 'telescopio') {
+            this.showDialog('Você olha através do telescópio e vê o horizonte de Santos. O mar se estende até onde a vista alcança, e os prédios antigos da cidade se misturam com as estruturas futuristas.', {
+                dialogColor: 0x0d1642,
+                portrait: 'player_portrait',
+                name: 'Você',
+                autoClose: true
+            });
+            return;
+        }
+
         if (point.type === 'jbl') {
             const message = ESTADOS_DISPOSITIVOS.jbl[this.jblState.state].look;
             this.showDialog(message, {

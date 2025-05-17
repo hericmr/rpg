@@ -242,9 +242,15 @@ export function registerDefaultMenus(gameState: GameState): void {
                 onSelect: () => {},
             },
             {
+                icon: '🤜',
+                label: 'Bater',
+                order: 6,
+                onSelect: () => {},
+            },
+            {
                 icon: '🎵',
                 label: 'Tocar Música',
-                order: 6,
+                order: 7,
                 condition: () => (
                     gameState.isPaired &&
                     !gameState.musicState.isPlaying
@@ -254,7 +260,7 @@ export function registerDefaultMenus(gameState: GameState): void {
             {
                 icon: '😈',
                 label: 'Provocar',
-                order: 7,
+                order: 8,
                 condition: () => gameState.musicState.isPlaying,
                 onSelect: () => {},
             }

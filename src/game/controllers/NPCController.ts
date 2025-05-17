@@ -133,9 +133,9 @@ export class NPCController {
                         portraitScale: 2
                     });
             },
-            onPunch: () => {
+            onHitNPC: () => {
                 this.menuManager.closeCurrentMenu();
-                    this.showDialog(`\nnão vou bater no ${config.name}. Ele é meu amigo.`, {
+                this.showDialog(`\nVocê não vai bater no ${config.name}.\nEle é seu amigo, afinal de contas.`, {
                         portrait: 'heric',
                         name: 'Você',
                         color: 0x0d1642,
@@ -144,7 +144,7 @@ export class NPCController {
             },
             onKick: () => {
                 this.menuManager.closeCurrentMenu();
-                    this.showDialog(`\nVocê considera chutar ${config.name}, mas desiste no último momento. \n Afinal, ele é seu amigo...`, {
+                this.showDialog(`\nVocê considera chutar ${config.name}, mas desiste no último momento. \nAfinal, ele é seu amigo...`, {
                         portrait: 'heric',
                         name: 'Você',
                         color: 0x0d1642,

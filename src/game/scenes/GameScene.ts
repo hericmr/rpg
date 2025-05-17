@@ -129,6 +129,28 @@ export default class GameScene extends BaseScene {
   create(): void {
     super.create(); // Call parent's create to initialize controllers
     
+    // Add wake-up fade effect
+    const blackOverlay = this.add.rectangle(
+      0, 
+      0, 
+      this.scale.width * 2, // Make sure it covers the entire game area
+      this.scale.height * 2, 
+      0x1a0f2e // Dark purple color for a more dreamy wake-up
+    )
+      .setOrigin(0)
+      .setDepth(1000)
+      .setScrollFactor(0);
+      
+    this.tweens.add({
+      targets: blackOverlay,
+      alpha: { from: 1, to: 0 },
+      duration: 3000,
+      ease: 'Cubic.easeInOut',
+      onComplete: () => {
+        blackOverlay.destroy();
+      }
+    });
+    
     this.setupPixelPerfectRendering();
     this.initializeGBEffect();
     
@@ -284,7 +306,12 @@ export default class GameScene extends BaseScene {
         name: npcData.name,
         spriteKey: npcData.id === 'exec_1' ? 'lion' : 'player',
         position: { x: npcStartX, y: npcStartY },
-        dialog: npcData.dialog || ['Olá!', 'Como posso ajudar?'],
+        dialog: npcData.id === 'exec_1' ? [
+          'zzzZZ... zzzZZ... zzzZZ...*parece ate o Snorlax*',
+          'Zzz... Zzz... Zzz... *ronco profundo* Zzz...',
+          'Zzzz *dorme como uma pedra...*',
+          'Zzz... Zzz... Zzz... *ronco profundo* Zzz...'
+        ] : ['Olá!', 'Como posso ajudar?'],
         patrolPoints: patrolPoints,
         clearance: npcData.clearance,
         implants: npcData.implants
@@ -318,19 +345,6 @@ export default class GameScene extends BaseScene {
       }));
       console.log('[DEBUG] interactionPoints extraídos do mapa:', interactionPoints);
       this.interactionController.addInteractionPoints(interactionPoints);
-    }
-
-    // Adiciona um ponto de interação manual para teste perto do player
-        const player = this.playerController.getPlayer();
-        if (player?.sprite) {
-    this.interactionController.addInteractionPoint({
-                x: player.sprite.x + 50,
-                y: player.sprite.y + 50,
-      radius: 100,
-      type: 'jbl',
-      dialog: 'Uma JBL com overclock, superpotente... atinge 99 mil decibeis.'
-    });
-            console.log('[DEBUG] Ponto de interação manual adicionado próximo ao jogador');
         }
   }
 
