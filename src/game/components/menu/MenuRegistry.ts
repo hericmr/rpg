@@ -82,7 +82,9 @@ export class MenuRegistry {
                         processedOption.onSelect = data.onShutdown;
                         break;
                     case 'Morder':
-                        processedOption.onSelect = data.onBite;
+                        if (type === 'jbl') {
+                            processedOption.onSelect = data.onBite;
+                        }
                         break;
                     case 'Parear':
                     case 'Ativar Pareamento':
