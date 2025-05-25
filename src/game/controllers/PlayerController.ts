@@ -186,9 +186,17 @@ export class PlayerController {
     public setDialogActive(active: boolean): void {
         console.log('[PlayerController] Setting dialog active:', active);
         this.dialogActive = active;
+        
+        // Sempre parar o movimento quando o diálogo é ativado
         if (active) {
-            this.player.sprite.setVelocity(0, 0);
-        } else {
+            if (this.player?.sprite) {
+                this.player.sprite.setVelocity(0, 0);
+                this.player.sprite.anims.play('idle', true);
+            }
+        }
+        
+        // Garantir que o input seja configurado corretamente
+        if (!active) {
             this.setupKeyboardInput();
         }
     }

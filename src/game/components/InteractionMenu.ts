@@ -4,6 +4,7 @@ interface InteractionMenuOption {
     icon: string;
     label: string;
     onSelect: () => void;
+    portrait?: string;
 }
 
 interface InteractionMenuConfig {
@@ -13,24 +14,27 @@ interface InteractionMenuConfig {
     options: InteractionMenuOption[];
     onClose?: () => void;
     title?: string; // título do objeto
+    defaultPortrait?: string;
 }
 
 export class InteractionMenu {
     private scene: Scene;
     private background: GameObjects.Rectangle;
-    private buttons: GameObjects.Text[];
-    private isActive: boolean = false;
+    private buttons: GameObjects.Text[] = [];
+    private isActive: boolean = true;
     private selectedIndex: number = 0;
     private options: InteractionMenuOption[];
-    private keyLeft: Phaser.Input.Keyboard.Key;
-    private keyRight: Phaser.Input.Keyboard.Key;
-    private keyEnter: Phaser.Input.Keyboard.Key;
-    private keySpace: Phaser.Input.Keyboard.Key;
-    private keyEsc: Phaser.Input.Keyboard.Key;
+    private keyLeft!: Phaser.Input.Keyboard.Key;
+    private keyRight!: Phaser.Input.Keyboard.Key;
+    private keyEnter!: Phaser.Input.Keyboard.Key;
+    private keySpace!: Phaser.Input.Keyboard.Key;
+    private keyEsc!: Phaser.Input.Keyboard.Key;
     private border: GameObjects.Rectangle;
     private onClose?: () => void;
     private titleText?: GameObjects.Text;
     private escText?: GameObjects.Text;
+    private defaultPortrait: string = 'heric';
+    private portrait?: GameObjects.Image;
 
     constructor(config: InteractionMenuConfig) {
         this.scene = config.scene;
@@ -38,6 +42,7 @@ export class InteractionMenu {
         this.buttons = [];
         this.options = config.options;
         this.onClose = config.onClose;
+        this.defaultPortrait = config.defaultPortrait || 'heric';
 
         // Bind methods to ensure correct 'this' context
         this.close = this.close.bind(this);
@@ -67,6 +72,16 @@ export class InteractionMenu {
         );
         this.border.setScrollFactor(0);
         this.border.setDepth(99);
+
+        // Adicionar retrato
+        this.portrait = this.scene.add.image(
+            config.x - 190, // Posicionado à esquerda do menu
+            config.y,
+            this.defaultPortrait
+        );
+        this.portrait.setScale(2);
+        this.portrait.setScrollFactor(0);
+        this.portrait.setDepth(101);
 
         // Exibir título se fornecido
         if (config.title) {
@@ -162,12 +177,24 @@ export class InteractionMenu {
     }
 
     private updateSelection() {
+        if (!this.isActive || !this.scene) return;
+
         this.buttons.forEach((btn, idx) => {
             if (idx === this.selectedIndex) {
                 btn.setStyle({ backgroundColor: '#FFD700', color: '#1a237e' });
                 // Mostrar o label abaixo do ícone
                 btn.setText(`${this.options[idx].icon}\n${this.options[idx].label}`);
                 btn.setFontSize(16);
+                
+                // Atualizar o retrato se a opção tiver um retrato específico
+                const portraitToUse = this.options[idx].portrait || this.defaultPortrait;
+                if (this.portrait && portraitToUse) {
+                    try {
+                        this.portrait.setTexture(portraitToUse);
+                    } catch (error) {
+                        console.warn('[InteractionMenu] Failed to update portrait:', error);
+                    }
+                }
             } else {
                 btn.setStyle({ backgroundColor: undefined, color: '#FFFFFF' });
                 // Mostrar apenas o ícone
@@ -205,6 +232,11 @@ export class InteractionMenu {
             console.log('[InteractionMenu] Destroying border');
             if (this.border) {
                 this.border.destroy();
+            }
+
+            // Destruir o retrato
+            if (this.portrait) {
+                this.portrait.destroy();
             }
             
             console.log('[InteractionMenu] Destroying title text');

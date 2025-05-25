@@ -43,6 +43,7 @@ export default class InteractionController {
     private downKey: Phaser.Input.Keyboard.Key | null = null;
     private escKey: Phaser.Input.Keyboard.Key | null = null;
     private menuManager: MenuManager;
+    private currentPortrait: string = 'heric';
 
     constructor(scene: Scene, playerController: PlayerController) {
         this.scene = scene;
@@ -100,6 +101,7 @@ export default class InteractionController {
         this.currentDialog = null;
         this.currentMenu = null;
         this.currentInteractionPoint = null;
+        this.playerController.setDialogActive(false);
         
         // Remove any existing keyboard listeners
         if (this.spaceKey) {
@@ -118,6 +120,10 @@ export default class InteractionController {
             this.escapeKey.removeAllListeners();
             this.escapeKey = null;
         }
+
+        // Limpar outros estados
+        this.cleanupPasswordInput();
+        this.cleanupMusicSelection();
 
         if (!this.scene.input?.keyboard) {
             console.warn('[InteractionController] Keyboard not available, will retry initialization later');
@@ -168,11 +174,26 @@ export default class InteractionController {
 
     private cleanupInteractionState(): void {
         console.log('[InteractionController] Cleaning up interaction state');
+        
+        // Limpar menu
         this.menuManager.closeCurrentMenu();
+        
+        // Limpar diálogo
+        if (this.currentDialog) {
+            this.currentDialog.close();
+            this.currentDialog = null;
+        }
+        
+        // Limpar estados
         this.currentInteractionPoint = null;
         this.isInteracting = false;
+        
+        // Garantir que o playerController seja atualizado
         this.playerController.setDialogActive(false);
+        
+        // Limpar outros estados
         this.cleanupPasswordInput();
+        this.cleanupMusicSelection();
     }
 
     private showInteractionMenu(point: InteractionPoint): void {
@@ -185,7 +206,7 @@ export default class InteractionController {
         if (this.currentDialog) {
             console.log('[InteractionController] Closing existing dialog before showing menu');
             this.currentDialog.close();
-            this.cleanupInteractionState();
+            this.currentDialog = null;
         }
 
         // Se for vaso, mostrar diálogo direto
@@ -210,19 +231,50 @@ export default class InteractionController {
             gameState: this.gameState,
             
             // Ações comuns e do Telescópio
-            onLook: () => this.handleLook(point),
-            onExamine: () => this.handleTelescopeExamine(point),
-            onStatus: () => this.handleTelescopeStatus(point),
+            onLook: () => {
+                this.menuManager.closeCurrentMenu();
+                this.handleLook(point);
+            },
+            onExamine: () => {
+                this.menuManager.closeCurrentMenu();
+                this.handleTelescopeExamine(point);
+            },
+            onStatus: () => {
+                this.menuManager.closeCurrentMenu();
+                this.handleTelescopeStatus(point);
+            },
             
             // Ações da JBL e Computador
-            onPick: () => this.handlePick(point),
-            onShutdown: () => this.handleShutdown(point),
-            onConnect: () => this.handleConnect(point),
-            onCancelPairing: () => this.handleCancelPairing(point),
-            onKick: () => this.handleKickJBL(point),
-            onBite: () => this.handleBiteJBL(point),
-            onVolumeControl: () => this.showVolumeControl(),
+            onPick: () => {
+                this.menuManager.closeCurrentMenu();
+                this.handlePick(point);
+            },
+            onShutdown: () => {
+                this.menuManager.closeCurrentMenu();
+                this.handleShutdown(point);
+            },
+            onConnect: () => {
+                this.menuManager.closeCurrentMenu();
+                this.handleConnect(point);
+            },
+            onCancelPairing: () => {
+                this.menuManager.closeCurrentMenu();
+                this.handleCancelPairing(point);
+            },
+            onKick: () => {
+                this.menuManager.closeCurrentMenu();
+                this.handleKickJBL(point);
+            },
+            onBite: () => {
+                this.menuManager.closeCurrentMenu();
+                this.handleBiteJBL(point);
+            },
+            onVolumeControl: () => {
+                this.menuManager.closeCurrentMenu();
+                this.showVolumeControl();
+            },
             onPlayMusic: () => {
+                this.menuManager.closeCurrentMenu();
                 if (!this.isPaired) {
                     this.showDialog('Você precisa parear a JBL com o computador primeiro!', {
                         dialogColor: 0xff0000,
@@ -236,10 +288,16 @@ export default class InteractionController {
                     this.showMusicSelection();
                 }
             },
-            onStopMusic: () => this.stopMusic(),
+            onStopMusic: () => {
+                this.menuManager.closeCurrentMenu();
+                this.stopMusic();
+            },
             
             // Ações específicas do Computador
-            onUnlock: () => this.showPasswordPrompt()
+            onUnlock: () => {
+                this.menuManager.closeCurrentMenu();
+                this.showPasswordPrompt();
+            }
         };
 
         // Show appropriate menu based on point type
@@ -321,16 +379,19 @@ export default class InteractionController {
         if (point.type === 'vaso') {
             this.showDialog('Um vaso bonito com uma planta exótica. Parece ser uma espécie rara de samambaia que só cresce em Santos.', {
                 dialogColor: 0x0d1642,
-                portrait: 'player_portrait',
+                portrait: 'heric',
                 name: 'Você',
-                autoClose: true
+                autoClose: true,
+                onClose: () => {
+                    this.cleanupInteractionState();
+                }
             });
             return;
         }
 
         if (point.type === 'telescopio') {
             // Criar instância do TelescopeView
-            const telescopeView = new TelescopeView({
+            new TelescopeView({
                 scene: this.scene,
                 imageKey: 'cidade',
                 radius: 150,
@@ -339,29 +400,24 @@ export default class InteractionController {
                 borderColor: 0x000000,
                 crosshairColor: 0x000000,
                 onClose: () => {
-                    this.playerController.setDialogActive(false);
-                    this.isInteracting = false;
                     this.showDialog('Você abaixa o telescópio.', {
                         dialogColor: 0x0d1642,
-                        portrait: 'player_portrait',
+                        portrait: 'heric',
                         name: 'Você',
-                        autoClose: true
+                        autoClose: true,
+                        onClose: () => {
+                            this.cleanupInteractionState();
+                        }
                     });
                 }
             });
 
-            this.showDialog('Você olha através do telescópio e vê o horizonte de Santos. O mar se estende até onde a vista alcança, e os prédios antigos da cidade se misturam com as estruturas futuristas.\n\nUse as setas do teclado para mover a vista.\nPressione [ESC] para sair.', {
+            this.showDialog('Você olha através do telescópio e vê o horizonte de Santos. O mar se estende até onde a vista alcança, e os prédios antigos da cidade se misturam com as estruturas futuristas.\n\nUse as setas do teclado ou WASD para mover a vista.\nPressione [ESC] para sair.', {
                 dialogColor: 0x0d1642,
-                portrait: 'player_portrait',
+                portrait: 'heric',
                 name: 'Você',
                 autoClose: true,
-                onClose: () => {
-                    if (telescopeView.isViewActive()) {
-                        telescopeView.destroy();
-                    }
-                    this.playerController.setDialogActive(false);
-                    this.isInteracting = false;
-                }
+                noMenuReturn: true
             });
             return;
         }
@@ -418,7 +474,16 @@ export default class InteractionController {
             }
             
             const message = ESTADOS_DISPOSITIVOS.jbl[this.jblState.state].use;
-            this.showDialog(message);
+            this.showDialog(message, {
+                dialogColor: 0x0d1642,
+                portrait: 'jbl',
+                name: 'JBL',
+                autoClose: true,
+                noMenuReturn: true,
+                onClose: () => {
+                    this.cleanupInteractionState();
+                }
+            });
             return;
         }
 
@@ -430,7 +495,16 @@ export default class InteractionController {
             }
             
             const message = ESTADOS_DISPOSITIVOS.computer[this.computerState.state].use;
-            this.showDialog(message);
+            this.showDialog(message, {
+                dialogColor: 0x0d1642,
+                portrait: 'computer',
+                name: 'Computador',
+                autoClose: true,
+                noMenuReturn: true,
+                onClose: () => {
+                    this.cleanupInteractionState();
+                }
+            });
             return;
         }
 
@@ -633,7 +707,11 @@ export default class InteractionController {
                             dialogColor: 0x0d1642,
                             portrait: 'jbl',
                             name: 'JBL',
-                            autoClose: true
+                            autoClose: true,
+                            noMenuReturn: true,
+                            onClose: () => {
+                                this.cleanupInteractionState();
+                            }
                         });
                     }
                 }
@@ -657,7 +735,11 @@ export default class InteractionController {
                             dialogColor: 0x0d1642,
                             portrait: 'computer',
                             name: 'Computador',
-                            autoClose: true
+                            autoClose: true,
+                            noMenuReturn: true,
+                            onClose: () => {
+                                this.cleanupInteractionState();
+                            }
                         });
                     }
                 }
@@ -883,11 +965,8 @@ export default class InteractionController {
         console.log('[InteractionController] Showing dialog:', message);
         
         // Se houver um menu ativo, fechamos ele
-        if (this.currentMenu) {
-            console.log('[InteractionController] Closing current menu before showing dialog');
-            this.currentMenu.close();
-            this.currentMenu = null;
-        }
+        this.menuManager.closeCurrentMenu();
+        this.currentMenu = null;
 
         // Se houver um diálogo ativo, fechamos ele
         if (this.currentDialog) {
@@ -909,6 +988,34 @@ export default class InteractionController {
         const screenWidth = this.scene.cameras.main.width;
         const screenHeight = this.scene.cameras.main.height;
 
+        // Criar novo diálogo com callback de fechamento
+        const onCloseCallback = () => {
+            console.log('[InteractionController] Dialog closed callback');
+            
+            // Chamar callback original se existir
+            if (options.onClose) {
+                options.onClose();
+            }
+
+            // Se for autoClose ou noMenuReturn, sempre limpamos o estado
+            if (options.autoClose || options.noMenuReturn) {
+                console.log('[InteractionController] Auto-close or no-menu-return - cleaning up state');
+                this.cleanupInteractionState();
+                return;
+            }
+
+            // Se não tivermos um ponto de interação, limpamos o estado
+            if (!this.currentInteractionPoint) {
+                console.log('[InteractionController] No interaction point - cleaning up state');
+                this.cleanupInteractionState();
+                return;
+            }
+
+            // Se chegamos aqui, reabrimos o menu
+            console.log('[InteractionController] Reopening menu after dialog');
+            this.showInteractionMenu(this.currentInteractionPoint);
+        };
+
         this.currentDialog = new DialogBox({
             scene: this.scene,
             x: screenWidth / 2,
@@ -916,34 +1023,13 @@ export default class InteractionController {
             width: screenWidth * 0.9,
             height: 120,
             dialog: message,
-            portrait: options.portrait || 'player_portrait',
+            portrait: options.portrait || this.currentPortrait,
             name: options.name || 'Você',
             dialogColor: options.dialogColor || 0x0d1642,
             options: options.options,
             autoClose: options.autoClose,
             noMenuReturn: options.noMenuReturn,
-            onClose: () => {
-                console.log('[InteractionController] Dialog closed');
-                
-                if (options.onClose) {
-                    options.onClose();
-                }
-
-                // Só reabrimos o menu se:
-                // 1. Não for autoClose
-                // 2. Não for noMenuReturn
-                // 3. Tivermos um ponto de interação
-                // 4. Não estivermos no processo de sair
-                if (!options.autoClose && 
-                    !options.noMenuReturn && 
-                    this.currentInteractionPoint) {
-                    console.log('[InteractionController] Reopening menu after dialog');
-                    this.showInteractionMenu(this.currentInteractionPoint);
-                } else {
-                    console.log('[InteractionController] Not reopening menu - cleaning up state');
-                    this.cleanupInteractionState();
-                }
-            }
+            onClose: onCloseCallback
         });
 
         if (this.currentDialog) {
@@ -1084,7 +1170,7 @@ export default class InteractionController {
     private handleTelescopeExamine(point: InteractionPoint): void {
         this.showDialog('Você examina o telescópio mais detalhadamente. É um modelo antigo, mas bem conservado. As lentes estão limpas e o mecanismo de ajuste funciona perfeitamente.', {
             dialogColor: 0x0d1642,
-            portrait: 'player_portrait',
+            portrait: 'heric',
             name: 'Você',
             autoClose: true
         });
@@ -1093,9 +1179,22 @@ export default class InteractionController {
     private handleTelescopeStatus(point: InteractionPoint): void {
         this.showDialog('Status do Telescópio:\n- Lentes: Limpas\n- Mecanismo: Funcional\n- Ajuste: Preciso\n- Última Manutenção: Recente', {
             dialogColor: 0x0d1642,
-            portrait: 'player_portrait',
+            portrait: 'heric',
             name: 'Você',
             autoClose: true
         });
+    }
+
+    public updatePortrait(portrait: string): void {
+        if (!portrait) return;
+        
+        this.currentPortrait = portrait;
+        if (this.currentDialog && this.currentDialog.isDialogActive()) {
+            try {
+                this.currentDialog.updatePortrait(portrait);
+            } catch (error) {
+                console.warn('[InteractionController] Failed to update portrait:', error);
+            }
+        }
     }
 } 

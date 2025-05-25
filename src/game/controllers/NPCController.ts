@@ -119,9 +119,18 @@ export class NPCController {
                 this.showDialog(`\n${config.name} está ${this.isNPCAwake ? 'acordado e irritado' : 'dormindo profundamente'}.`, {
                     portrait: config.spriteKey,
                     name: config.name,
-                        color: 0x0d1642,
-                        portraitScale: 2
-                    });
+                    color: 0x0d1642,
+                    portraitScale: 2
+                });
+            },
+            onBite: () => {
+                this.menuManager.closeCurrentMenu();
+                this.showDialog(`\n... Não!`, {
+                    portrait: 'hericrosto_morder',
+                    name: 'Você',
+                    color: 0x0d1642,
+                    portraitScale: 2
+                });
             },
             onTalk: () => {
                 this.menuManager.closeCurrentMenu();
@@ -129,27 +138,27 @@ export class NPCController {
                 this.showDialog(config.dialog[dialogIndex], {
                     portrait: config.spriteKey,
                     name: config.name,
-                        color: 0x0d1642,
-                        portraitScale: 2
-                    });
+                    color: 0x0d1642,
+                    portraitScale: 2
+                });
             },
             onHitNPC: () => {
                 this.menuManager.closeCurrentMenu();
-                this.showDialog(`\nVocê não vai bater no ${config.name}.\nEle é seu amigo, afinal de contas.`, {
-                        portrait: 'heric',
-                        name: 'Você',
-                        color: 0x0d1642,
-                        portraitScale: 2
-                    });
+                this.showDialog(`\nNão vou bater no ${config.name}.\nEle é meu amigo, afinal de contas.`, {
+                    portrait: 'heric',
+                    name: 'Você',
+                    color: 0x0d1642,
+                    portraitScale: 2
+                });
             },
             onKick: () => {
                 this.menuManager.closeCurrentMenu();
                 this.showDialog(`\nVocê considera chutar ${config.name}, mas desiste no último momento. \nAfinal, ele é seu amigo...`, {
-                        portrait: 'heric',
-                        name: 'Você',
-                        color: 0x0d1642,
-                        portraitScale: 2
-                    });
+                    portrait: 'heric',
+                    name: 'Você',
+                    color: 0x0d1642,
+                    portraitScale: 2
+                });
             }
         });
     }
@@ -281,7 +290,7 @@ export class NPCController {
 
             // Após um pequeno delay, mostrar outro diálogo
             this.scene.time.delayedCall(3000, () => {
-                this.showDialog('Espera... essa música... LÉSBICA FUTURISTA?!?! COMO VOCÊ ACHOU ISSO?!', {
+                this.showDialog('Espera... essa... LÉSBICA FUTURISTA?!?! QUE ISSO?!', {
                     color: 0x0d1642,
                     autoClose: true
                 });

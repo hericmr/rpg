@@ -17,6 +17,7 @@ export interface DialogBoxConfig {
   name?: string;
   dialogColor?: number;
   textColor?: string;
+  fontSize?: string;
   onClose?: () => void;
   options?: DialogBoxOption[];
   autoClose?: boolean;
@@ -37,6 +38,7 @@ export class DialogBox extends Phaser.GameObjects.Container {
   private spaceKey?: Phaser.Input.Keyboard.Key;
   private dialog: string;
   private onClose?: () => void;
+  private defaultPortrait: string = 'heric';
 
   constructor(config: DialogBoxConfig) {
     super(config.scene, config.x, config.y);
@@ -88,16 +90,15 @@ export class DialogBox extends Phaser.GameObjects.Container {
     this.background.setDepth(201);
 
     // Adicionar retrato se fornecido
-    if (config.portrait) {
-      this.portrait = this.scene.add.image(
-        config.x - (config.width / 2) + 40,
-        adjustedY,
-        config.portrait
-      );
-      this.portrait.setScale(config.portraitScale || 2);
-      this.portrait.setScrollFactor(0);
-      this.portrait.setDepth(202);
-    }
+    const portraitKey = config.portrait || this.defaultPortrait;
+    this.portrait = this.scene.add.image(
+      config.x - (config.width / 2) + 40,
+      adjustedY,
+      portraitKey
+    );
+    this.portrait.setScale(config.portraitScale || 2);
+    this.portrait.setScrollFactor(0);
+    this.portrait.setDepth(202);
 
     // Criar texto do nome
     if (config.name) {
@@ -123,7 +124,7 @@ export class DialogBox extends Phaser.GameObjects.Container {
       adjustedY - 10,
       config.dialog,
       {
-        fontSize: '10px',
+        fontSize: config.fontSize || '16px',
         fontFamily: 'monospace',
         color: textColor,
         wordWrap: { width: config.width - (this.portrait ? 100 : 40) },
@@ -197,6 +198,16 @@ export class DialogBox extends Phaser.GameObjects.Container {
     closeText.setOrigin(1, 1);
     closeText.setPosition(config.width - 10, config.height - 5);
     this.add(closeText);
+
+    // Configurar tecla de espaço para fechar o diálogo
+    this.spaceKey = this.scene.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    if (this.spaceKey) {
+      this.spaceKey.on('down', () => {
+        if (this.isActive && !config.options) {
+          this.close();
+        }
+      });
+    }
   }
 
   public updateText(newText: string): void {
@@ -219,34 +230,35 @@ export class DialogBox extends Phaser.GameObjects.Container {
     
     this.isActive = false;
     if (this.timer) this.timer.destroy();
+
+    // Remover listener da tecla de espaço
+    if (this.spaceKey) {
+      this.spaceKey.removeAllListeners();
+      this.spaceKey.destroy();
+      this.spaceKey = undefined;
+    }
+
+    if (this.onClose) {
+      this.onClose();
+    }
   }
 
   public isDialogActive(): boolean {
     return this.isActive;
   }
 
-  destroy(): void {
-    // Remover o listener da tecla de espaço
-    this.spaceKey?.removeAllListeners();
-    this.spaceKey?.destroy();
-    
-    // Destruir todos os elementos gráficos
-    this.outerBorder.destroy();
-    this.innerBorder.destroy();
-    this.background.destroy();
-    this.text.destroy();
-    this.portrait?.destroy();
-    this.nameText?.destroy();
-    this.timer?.destroy();
-    
-    // Destruir botões de opções
-    this.optionButtons.forEach(button => button.destroy());
-    this.optionButtons = [];
-    
-    this.isActive = false;
-    
-    if (this.onClose) {
-      this.onClose();
+  public updatePortrait(portraitKey: string): void {
+    if (this.portrait && this.scene && this.isActive) {
+      try {
+        this.portrait.setTexture(portraitKey);
+      } catch (error) {
+        console.warn('[DialogBox] Failed to update portrait:', error);
+      }
     }
+  }
+
+  destroy(): void {
+    this.close();
+    super.destroy();
   }
 } 

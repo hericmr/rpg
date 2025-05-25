@@ -9,6 +9,7 @@ import InteractionController from '../controllers/InteractionController';
 import { DialogBox } from '../components/DialogBox';
 import { NPCConfig } from '../controllers/NPCController';
 import { InitialDialog } from '../components/InitialDialog';
+import GameState from '../state/GameState';
 
 interface SceneData {
     fromVaranda?: boolean;
@@ -84,6 +85,8 @@ export default class GameScene extends BaseScene {
     this.load.spritesheet('lion', `${publicUrl}/assets/lion2.png`, { frameWidth: 16, frameHeight: 16 });
     this.load.image('lionface', `${publicUrl}/assets/lion_2.png`);
     this.load.image('player_portrait', `${publicUrl}/assets/hericrosto.png`);
+    this.load.image('hericrosto_morder', `${publicUrl}/assets/hericrosto_morder.png`);
+    this.load.image('hericrostoolhar', `${publicUrl}/assets/hericrosto_olhar.png`);
     this.load.image('wall', `${publicUrl}/assets/wall.svg`);
     this.load.image('floor', `${publicUrl}/assets/floor.svg`);
     this.load.image('desk', `${publicUrl}/assets/desk.svg`);
@@ -129,7 +132,9 @@ export default class GameScene extends BaseScene {
   create(): void {
     super.create(); // Call parent's create to initialize controllers
     
-    // Add wake-up fade effect
+    // Add wake-up fade effect only on first load
+    const gameState = GameState.getInstance();
+    if (!gameState.hasOpenedGameScene) {
     const blackOverlay = this.add.rectangle(
       0, 
       0, 
@@ -150,6 +155,9 @@ export default class GameScene extends BaseScene {
         blackOverlay.destroy();
       }
     });
+
+      gameState.hasOpenedGameScene = true;
+    }
     
     this.setupPixelPerfectRendering();
     this.initializeGBEffect();

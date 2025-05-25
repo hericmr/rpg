@@ -10,12 +10,14 @@ function createDefaultOptions(gameState: GameState): MenuOption[] {
             label: 'Olhar',
             order: 1,
             onSelect: () => {},
+            portrait: 'hericrostoolhar'
         },
         {
             icon: '👄',
             label: 'Morder',
             order: 2,
             onSelect: () => {},
+            portrait: 'hericrosto_morder'
         },
         {
             icon: '👢',

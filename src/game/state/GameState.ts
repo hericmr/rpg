@@ -64,6 +64,7 @@ class GameState {
     };
 
     private _isPaired: boolean = false;
+    private _hasOpenedGameScene: boolean = false;
 
     // Getters
     get jblState(): JBLDeviceState {
@@ -80,6 +81,10 @@ class GameState {
 
     get isPaired(): boolean {
         return this._isPaired;
+    }
+
+    get hasOpenedGameScene(): boolean {
+        return this._hasOpenedGameScene;
     }
 
     // Setters with state synchronization
@@ -145,6 +150,10 @@ class GameState {
         this.updateComputerState();
     }
 
+    set hasOpenedGameScene(value: boolean) {
+        this._hasOpenedGameScene = value;
+    }
+
     public resetState(): void {
         this._jblState = {
             isOn: false,
@@ -171,6 +180,7 @@ class GameState {
         };
 
         this._isPaired = false;
+        this._hasOpenedGameScene = false;
     }
 }
 

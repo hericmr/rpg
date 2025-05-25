@@ -1,6 +1,10 @@
 import { Scene } from 'phaser';
 import { DialogBox } from './DialogBox';
 
+// Texto do diálogo inicial que pode ser facilmente customizado
+const INITIAL_DIALOG_TEXT = "\n     acorda com uma dor de cabeça lancinante e amnésia,\n" +
+                          " não se lembra de nada que aconteceu no dia anterior...";
+
 export class InitialDialog {
     private scene: Scene;
     private dialogBox: DialogBox | null = null;
@@ -26,14 +30,13 @@ export class InitialDialog {
             y: this.scene.cameras.main.height - 90,
             width: this.scene.cameras.main.width * 0.9,
             height: 140,
-            dialog:
-                "\n     acorda com uma dor de cabeça lancinante e amnésia,\n" +
-                " não se lembra de nada que aconteceu no dia anterior..." ,
+            dialog: INITIAL_DIALOG_TEXT,
             dialogColor: 0x0d1642,
-            portrait: 'player_portrait',
+            portrait: 'heric',
             name: 'Você',
             portraitScale: 3,
             textColor: '#FFFFFF',
+            fontSize: '12px',
             autoClose: false
         };
 

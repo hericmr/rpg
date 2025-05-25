@@ -20,6 +20,7 @@ export class TelescopeView {
     private mask!: GameObjects.Graphics;
     private scopeBorder!: GameObjects.Graphics;
     private cursors: Phaser.Types.Input.Keyboard.CursorKeys | undefined;
+    private wasdKeys!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
     private updateEvent!: Phaser.Events.EventEmitter;
     private isActive: boolean = true;
 
@@ -133,6 +134,14 @@ export class TelescopeView {
         if (keyboard) {
             this.cursors = keyboard.createCursorKeys();
             
+            // Configurar teclas WASD
+            this.wasdKeys = {
+                W: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
+                A: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
+                S: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
+                D: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D)
+            };
+            
             // Adicionar tecla ESC para sair
             keyboard.on('keydown-ESC', () => {
                 if (this.isActive) {
@@ -149,22 +158,22 @@ export class TelescopeView {
     }
 
     private update(): void {
-        if (!this.isActive || !this.cursors) return;
+        if (!this.isActive) return;
 
         const screenWidth = this.scene.cameras.main.width;
         const screenHeight = this.scene.cameras.main.height;
 
         // Atualizar posição baseado nas teclas
-        if (this.cursors.left.isDown) {
+        if ((this.cursors?.left.isDown || this.wasdKeys.A.isDown)) {
             this.cityImage.x += this.config.panSpeed;
         }
-        if (this.cursors.right.isDown) {
+        if ((this.cursors?.right.isDown || this.wasdKeys.D.isDown)) {
             this.cityImage.x -= this.config.panSpeed;
         }
-        if (this.cursors.up.isDown) {
+        if ((this.cursors?.up.isDown || this.wasdKeys.W.isDown)) {
             this.cityImage.y += this.config.panSpeed;
         }
-        if (this.cursors.down.isDown) {
+        if ((this.cursors?.down.isDown || this.wasdKeys.S.isDown)) {
             this.cityImage.y -= this.config.panSpeed;
         }
 
@@ -183,6 +192,7 @@ export class TelescopeView {
     }
 
     public destroy(): void {
+        if (!this.isActive) return; // Evitar destruição múltipla
         this.isActive = false;
         
         // Remove keyboard event listeners
@@ -190,6 +200,11 @@ export class TelescopeView {
             const keyboard = this.scene.input.keyboard;
             if (keyboard) {
                 keyboard.off('keydown-ESC');
+                // Remove WASD key listeners
+                this.wasdKeys.W.destroy();
+                this.wasdKeys.A.destroy();
+                this.wasdKeys.S.destroy();
+                this.wasdKeys.D.destroy();
             }
         }
         

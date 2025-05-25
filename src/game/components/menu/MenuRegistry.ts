@@ -4,6 +4,7 @@ export interface MenuOption {
     onSelect: () => void;
     condition?: () => boolean;
     order?: number;
+    portrait?: string;
 }
 
 export interface MenuConfig {
